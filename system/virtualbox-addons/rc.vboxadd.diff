@@ -1,7 +1,6 @@
-diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh VirtualBox-5.2.4/src/VBox/Additions/linux/installer/vboxadd.sh
---- VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh	2017-12-19 10:22:03.000000000 +0100
-+++ VirtualBox-5.2.4/src/VBox/Additions/linux/installer/vboxadd.sh	2018-01-07 17:23:23.225998245 +0100
-@@ -130,18 +130,9 @@
+--- VirtualBox-6.1.12.orig/src/VBox/Additions/linux/installer/vboxadd.sh	2020-08-26 01:55:31.913206190 +0800
++++ VirtualBox-6.1.12/src/VBox/Additions/linux/installer/vboxadd.sh	2020-08-26 02:53:03.498468456 +0800
+@@ -121,17 +121,9 @@
  
  dev=/dev/vboxguest
  userdev=/dev/vboxuser
@@ -16,112 +15,130 @@ diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh Vir
 -fi
 -test -n "$INSTALL_DIR" -a -n "$INSTALL_VER" ||
 -  fail "Configuration file $config not complete"
--
- running_vboxguest()
- {
-     lsmod | grep -q "vboxguest[^_-]"
-@@ -252,28 +243,6 @@
-         }
-     fi  # INSTALL_NO_MODULE_BUILDS
+ MODULE_SRC="$INSTALL_DIR/src/vboxguest-$INSTALL_VER"
+ BUILDINTMP="$MODULE_SRC/build_in_tmp"
  
--    # Put the X.Org driver in place.  This is harmless if it is not needed.
--    "${INSTALL_DIR}/init/vboxadd-x11" setup 2>> "${LOG}"
--    # Install the guest OpenGL drivers.  For now we don't support
--    # multi-architecture installations
--    rm -f /etc/ld.so.conf.d/00vboxvideo.conf
--    rm -Rf /var/lib/VBoxGuestAdditions/lib
--    if /usr/bin/VBoxClient --check3d 2>/dev/null; then
--        mkdir -p /var/lib/VBoxGuestAdditions/lib
--        ln -sf "${INSTALL_DIR}/lib/VBoxOGL.so" /var/lib/VBoxGuestAdditions/lib/libGL.so.1
--        # SELinux for the OpenGL libraries, so that gdm can load them during the
--        # acceleration support check.  This prevents an "Oh no, something has gone
--        # wrong!" error when starting EL7 guests.
--        if test -e /etc/selinux/config; then
--            if command -v semanage > /dev/null; then
--                semanage fcontext -a -t lib_t "/var/lib/VBoxGuestAdditions/lib/libGL.so.1"
--            fi
--            chcon -h  -t lib_t "/var/lib/VBoxGuestAdditions/lib/libGL.so.1"
--        fi
--        echo "/var/lib/VBoxGuestAdditions/lib" > /etc/ld.so.conf.d/00vboxvideo.conf
--    fi
--    ldconfig
--
-     # Mount all shared folders from /etc/fstab. Normally this is done by some
-     # other startup script but this requires the vboxdrv kernel module loaded.
-     # This isn't necessary anymore as the vboxsf module is autoloaded.
-@@ -303,195 +272,16 @@
+@@ -209,236 +201,17 @@
      return 0
  }
  
--# Remove any existing VirtualBox guest kernel modules from the disk, but not
--# from the kernel as they may still be in use
--cleanup_modules()
+-## Update the initramfs.  Debian and Ubuntu put the graphics driver in, and
+-# need the touch(1) command below.  Everyone else that I checked just need
+-# the right module alias file from depmod(1) and only use the initramfs to
+-# load the root filesystem, not the boot splash.  update-initramfs works
+-# for the first two and dracut for every one else I checked.  We are only
+-# interested in distributions recent enough to use the KMS vboxvideo driver.
+-update_initramfs()
 -{
--    log "Removing existing VirtualBox kernel modules."
+-    ## kernel version to update for.
+-    version="${1}"
+-    depmod "${version}"
+-    rm -f "/lib/modules/${version}/initrd/vboxvideo"
+-    test ! -d "/lib/modules/${version}/initrd" ||
+-        test ! -f "/lib/modules/${version}/misc/vboxvideo.ko" ||
+-        touch "/lib/modules/${version}/initrd/vboxvideo"
+-
+-    # Systems without systemd-inhibit probably don't need their initramfs
+-    # rebuild here anyway.
+-    type systemd-inhibit >/dev/null 2>&1 || return
+-    if type dracut >/dev/null 2>&1; then
+-        systemd-inhibit --why="Installing VirtualBox Guest Additions" \
+-            dracut -f --kver "${version}"
+-    elif type update-initramfs >/dev/null 2>&1; then
+-        systemd-inhibit --why="Installing VirtualBox Guest Additions" \
+-            update-initramfs -u -k "${version}"
+-    fi
+-}
+-
+ # Remove any existing VirtualBox guest kernel modules from the disk, but not
+ # from the kernel as they may still be in use
+ cleanup_modules()
+ {
+-    # Needed for Ubuntu and Debian, see update_initramfs
+-    rm -f /lib/modules/*/initrd/vboxvideo
+-    for i in /lib/modules/*/misc; do
+-        KERN_VER="${i%/misc}"
+-        KERN_VER="${KERN_VER#/lib/modules/}"
+-        unset do_update
+-        for j in ${OLDMODULES}; do
+-            test -f "${i}/${j}.ko" && do_update=1 && rm -f "${i}/${j}.ko"
+-        done
+-        test -z "$do_update" || update_initramfs "$KERN_VER"
+-        # Remove empty /lib/modules folders which may have been kept around
+-        rmdir -p "${i}" 2>/dev/null || true
+-        unset keep
+-        for j in /lib/modules/"${KERN_VER}"/*; do
+-            name="${j##*/}"
+-            test -d "${name}" || test "${name%%.*}" != modules && keep=1
+-        done
+-        if test -z "${keep}"; then
+-            rm -rf /lib/modules/"${KERN_VER}"
+-            rm -f /boot/initrd.img-"${KERN_VER}"
+-        fi
+-    done
 -    for i in ${OLDMODULES}; do
 -        # We no longer support DKMS, remove any leftovers.
 -        rm -rf "/var/lib/dkms/${i}"*
--        # And remove old modules.
--        rm -f /lib/modules/*/misc/"${i}"*
--    done
--    # Remove leftover module folders.
--    for i in /lib/modules/*/misc; do
--        test -d "${i}" && rmdir -p "${i}" 2>/dev/null
 -    done
 -    rm -f /etc/depmod.d/vboxvideo-upstream.conf
+-    rm -f "$SKIPFILE_BASE"-*
 -}
 -
 -# Build and install the VirtualBox guest kernel modules
 -setup_modules()
 -{
--    # don't stop the old modules here -- they might be in use
--    test -z "${QUICKSETUP}" && cleanup_modules
--    # This does not work for 2.4 series kernels.  How sad.
--    test -n "${QUICKSETUP}" && test -f "${MODULE_DIR}/vboxguest.ko" && return 0
--    info "Building the VirtualBox Guest Additions kernel modules."
+-    KERN_VER="$1"
+-    test -n "$KERN_VER" || return 1
+-    # Match (at least): vboxguest.o; vboxguest.ko; vboxguest.ko.xz
+-    set /lib/modules/"$KERN_VER"/misc/vboxguest.*o*
+-    test ! -f "$1" || return 0
+-    test -d /lib/modules/"$KERN_VER"/build || return 0
+-    export KERN_VER
+-    info "Building the modules for kernel $KERN_VER."
 -
--    # We are allowed to do ">> $LOG" after we have called "log()" once.
--    log "Building the main Guest Additions module."
--    if ! $BUILDINTMP \
+-    log "Building the main Guest Additions $INSTALL_VER module for kernel $KERN_VER."
+-    if ! myerr=`$BUILDINTMP \
 -        --save-module-symvers /tmp/vboxguest-Module.symvers \
 -        --module-source $MODULE_SRC/vboxguest \
--        --no-print-directory install >> $LOG 2>&1; then
+-        --no-print-directory install 2>&1`; then
 -        # If check_module_dependencies.sh fails it prints a message itself.
+-        module_build_log "$myerr"
 -        "${INSTALL_DIR}"/other/check_module_dependencies.sh 2>&1 &&
 -            info "Look at $LOG to find out what went wrong"
 -        return 0
 -    fi
--    log "Building the shared folder support module"
--    if ! $BUILDINTMP \
+-    log "Building the shared folder support module."
+-    if ! myerr=`$BUILDINTMP \
 -        --use-module-symvers /tmp/vboxguest-Module.symvers \
 -        --module-source $MODULE_SRC/vboxsf \
--        --no-print-directory install >> $LOG 2>&1; then
+-        --no-print-directory install 2>&1`; then
+-        module_build_log "$myerr"
 -        info  "Look at $LOG to find out what went wrong"
 -        return 0
 -    fi
--    log "Building the graphics driver module"
--    if ! $BUILDINTMP \
+-    log "Building the graphics driver module."
+-    if ! myerr=`$BUILDINTMP \
 -        --use-module-symvers /tmp/vboxguest-Module.symvers \
 -        --module-source $MODULE_SRC/vboxvideo \
--        --no-print-directory install >> $LOG 2>&1; then
+-        --no-print-directory install 2>&1`; then
+-        module_build_log "$myerr"
 -        info "Look at $LOG to find out what went wrong"
 -    fi
 -    [ -d /etc/depmod.d ] || mkdir /etc/depmod.d
 -    echo "override vboxguest * misc" > /etc/depmod.d/vboxvideo-upstream.conf
 -    echo "override vboxsf * misc" >> /etc/depmod.d/vboxvideo-upstream.conf
 -    echo "override vboxvideo * misc" >> /etc/depmod.d/vboxvideo-upstream.conf
--    depmod
+-    update_initramfs "${KERN_VER}"
 -    return 0
 -}
 -
 -create_vbox_user()
 -{
--    log "Creating user for the Guest Additions."
 -    # This is the LSB version of useradd and should work on recent
 -    # distributions
--    useradd -d /var/run/vboxadd -g 1 -r -s /bin/false vboxadd >/dev/null 2>&1
+-    useradd -d /var/run/vboxadd -g 1 -r -s /bin/false vboxadd >/dev/null 2>&1 || true
 -    # And for the others, we choose a UID ourselves
--    useradd -d /var/run/vboxadd -g 1 -u 501 -o -s /bin/false vboxadd >/dev/null 2>&1
+-    useradd -d /var/run/vboxadd -g 1 -u 501 -o -s /bin/false vboxadd >/dev/null 2>&1 || true
 -
 -}
 -
@@ -129,7 +146,6 @@ diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh Vir
 -{
 -    # Create udev description file
 -    if [ -d /etc/udev/rules.d ]; then
--        log "Creating udev rule for the Guest Additions kernel module."
 -        udev_call=""
 -        udev_app=`which udevadm 2> /dev/null`
 -        if [ $? -eq 0 ]; then
@@ -151,6 +167,9 @@ diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh Vir
 -        ## @todo 60-vboxadd.rules -> 60-vboxguest.rules ?
 -        echo "KERNEL=${udev_fix}\"vboxguest\", NAME=\"vboxguest\", OWNER=\"vboxadd\", MODE=\"0660\"" > /etc/udev/rules.d/60-vboxadd.rules
 -        echo "KERNEL=${udev_fix}\"vboxuser\", NAME=\"vboxuser\", OWNER=\"vboxadd\", MODE=\"0666\"" >> /etc/udev/rules.d/60-vboxadd.rules
+-        # Make sure the new rule is noticed.
+-        udevadm control --reload >/dev/null 2>&1 || true
+-        udevcontrol reload_rules >/dev/null 2>&1 || true
 -    fi
 -}
 -
@@ -161,14 +180,15 @@ diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh Vir
 -    mkdir -p /etc/kernel/postinst.d /etc/kernel/prerm.d
 -    cat << EOF > /etc/kernel/postinst.d/vboxadd
 -#!/bin/sh
--test -d "/lib/modules/\${1}/build" || exit 0
--KERN_VER="\${1}" /sbin/rcvboxadd quicksetup
+-# This only works correctly on Debian derivatives - Red Hat calls it before
+-# installing the right header files.
+-/sbin/rcvboxadd quicksetup "\${1}"
 -exit 0
 -EOF
 -    cat << EOF > /etc/kernel/prerm.d/vboxadd
 -#!/bin/sh
 -for i in ${OLDMODULES}; do rm -f /lib/modules/"\${1}"/misc/"\${i}".ko; done
--rmdir -p /lib/modules/"\$1"/misc 2>/dev/null
+-rmdir -p /lib/modules/"\$1"/misc 2>/dev/null || true
 -exit 0
 -EOF
 -    chmod 0755 /etc/kernel/postinst.d/vboxadd /etc/kernel/prerm.d/vboxadd
@@ -192,58 +212,48 @@ diff -ur VirtualBox-5.2.4.orig/src/VBox/Additions/linux/installer/vboxadd.sh Vir
 -        # the real path.  The "chcon" is there as a back-up for old guests.
 -        command -v semanage > /dev/null &&
 -            semanage fcontext -a -t mount_exec_t "${INSTALL_DIR}/other/mount.vboxsf"
--        chcon -t mount_exec_t "${INSTALL_DIR}/other/mount.vboxsf"
+-        chcon -t mount_exec_t "${INSTALL_DIR}/other/mount.vboxsf" 2>/dev/null
 -    fi
--}
--
++-    echo "Not implemented! Please use removepkg or pkgtool to remove virtualbox-addons and/or virtualbox-kernel-addons instead."
+ }
+ 
  # setup_script
  setup()
  {
--    export BUILD_TYPE
--    export USERNAME
+-    # chcon is needed on old Fedora/Redhat systems.  No one remembers which.
+-    test ! -e /etc/selinux/config ||
+-        chcon -t bin_t "$BUILDINTMP" 2>/dev/null
 -
--    MODULE_SRC="$INSTALL_DIR/src/vboxguest-$INSTALL_VER"
--    BUILDINTMP="$MODULE_SRC/build_in_tmp"
--    chcon -t bin_t "$BUILDINTMP" > /dev/null 2>&1
--
--    test -z "${INSTALL_NO_MODULE_BUILDS}" && setup_modules
+-    if test -z "$INSTALL_NO_MODULE_BUILDS"; then
+-        info "Building the VirtualBox Guest Additions kernel modules.  This may take a while."
+-        info "To build modules for other installed kernels, run"
+-        info "  /sbin/rcvboxadd quicksetup <version>"
+-        info "or"
+-        info "  /sbin/rcvboxadd quicksetup all"
+-        if test -d /lib/modules/"$TARGET_VER"/build; then
+-            setup_modules "$TARGET_VER"
+-            depmod
+-        else
+-            info "Kernel headers not found for target kernel $TARGET_VER. \
+-Please install them and execute
+-  /sbin/rcvboxadd setup"
+-        fi
+-    fi
 -    create_vbox_user
 -    create_udev_rule
--    test -z "${INSTALL_NO_MODULE_BUILDS}" && create_module_rebuild_script
--    test -n "${QUICKSETUP}" && return 0
+-    test -n "${INSTALL_NO_MODULE_BUILDS}" || create_module_rebuild_script
 -    shared_folder_setup
 -    if  running_vboxguest || running_vboxadd; then
 -        info "Running kernel modules will not be replaced until the system is restarted"
 -    fi
+-
+-    # Put the X.Org driver in place.  This is harmless if it is not needed.
+-    # Also set up the OpenGL library.
+-    myerr=`"${INSTALL_DIR}/init/vboxadd-x11" setup 2>&1`
+-    test -z "${myerr}" || log "${myerr}"
+-
 -    return 0
 +    echo "Not implemented! Please use the virtualbox-kernel-addons.SlackBuild available at SlackBuilds.org instead."
  }
  
  # cleanup_script
- cleanup()
- {
--    if test -z "${INSTALL_NO_MODULE_BUILDS}"; then
--        # Delete old versions of VBox modules.
--        cleanup_modules
--        depmod
--
--        # Remove old module sources
--        for i in $OLDMODULES; do
--          rm -rf /usr/src/$i-*
--        done
--    fi
--
--    # Clean-up X11-related bits
--    "${INSTALL_DIR}/init/vboxadd-x11" cleanup 2>> "${LOG}"
--
--    # Remove other files
--    rm /sbin/mount.vboxsf 2>/dev/null
--    if test -z "${INSTALL_NO_MODULE_BUILDS}"; then
--        rm -f /etc/kernel/postinst.d/vboxadd /etc/kernel/prerm.d/vboxadd
--        rmdir -p /etc/kernel/postinst.d /etc/kernel/prerm.d 2>/dev/null
--    fi
--    rm /etc/udev/rules.d/60-vboxadd.rules 2>/dev/null
-+    echo "Not implemented! Please use removepkg or pkgtool to remove virtualbox-addons and/or virtualbox-kernel-addons instead."
- }
- 
- dmnstatus()
