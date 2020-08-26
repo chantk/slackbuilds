@@ -11,6 +11,6 @@ MD5SUM="b690ab7f2b6c7f9e46eabc101df021ed \
         71346aeeebbc006e6a4a94b9008ae209"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
-REQUIRES="acpica virtualbox-kernel"
+REQUIRES="acpica qt5"
 MAINTAINER="Heinz Wiesinger"
 EMAIL="pprkut@liwjatan.at"
