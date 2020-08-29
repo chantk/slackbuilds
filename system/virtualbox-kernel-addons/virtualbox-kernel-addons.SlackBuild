@@ -23,7 +23,8 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 PRGNAM=virtualbox-kernel-addons
-VERSION=${VERSION:-5.2.8}
+SRCNAM=VirtualBox
+VERSION=${VERSION:-6.1.12}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 
@@ -35,9 +36,18 @@ unset ARCH
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
-    arm*) ARCH=arm ;;
-       *) ARCH=$( uname -m ) ;;
+      i?86)
+	  ARCH=i486
+	  BUILDDIR="x86"
+	  ;;
+      arm*)
+	  ARCH=arm
+	  BUILDDIR="arm"
+	  ;;
+      *)
+	  ARCH=$( uname -m )
+	  BUILDDIR="amd64"
+	  ;;
   esac
 fi
 
@@ -54,8 +64,8 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM
-tar xvf $CWD/$PRGNAM-$VERSION.tar.xz
-cd $PRGNAM
+tar xvjf $CWD/${SRCNAM}-${VERSION}a.tar.bz2
+cd $SRCNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
@@ -79,6 +89,22 @@ if [ "$KERNEL_MINOR" = 4 -a "$KERNEL_PATCH" -ge 168 ]; then
   sed -i "s|KERNEL_VERSION(4, 9, 0)|KERNEL_VERSION(4, 4, 168)|" vboxguest/r0drv/linux/memobj-r0drv-linux.c
 fi
 
+# Use our CFLAGS
+sed -i "s|CXX_FLAGS=\"\"|CXX_FLAGS=\"$SLKCFLAGS -std=c++11\"|" ./configure
+
+./configure \
+  --with-makeself=/usr/bin/echo \
+  --only-additions
+
+. ./env.sh
+
+cp $CWD/LocalConfig.kmk .
+sed -i "s|LIBDIR|lib$LIBDIRSUFFIX|" ./LocalConfig.kmk
+sed -i "s|CXXFLAGS|$SLKCFLAGS -std=c++11|" ./LocalConfig.kmk
+
+kmk -j ${JOBS} LOCALCFG=./LocalConfig.kmk VBOX_ONLY_ADDITIONS=1
+
+cd out/linux.${BUILDDIR}/release/bin/additions/src
 MODULES=""
 
 if ! [ -e /lib/modules/$KERNEL/kernel/drivers/staging/vboxvideo ]; then
