@@ -24,7 +24,7 @@
 
 PRGNAM=virtualbox-addons
 SRCNAM=VirtualBox
-VERSION=${VERSION:-5.2.8}
+VERSION=${VERSION:-6.1.14}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 
@@ -73,7 +73,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $SRCNAM-${VERSION}
-tar xvf $CWD/$SRCNAM-${VERSION}.tar.bz2
+tar xvf $CWD/$SRCNAM-${VERSION}a.tar.bz2
 cd $SRCNAM-${VERSION}
 chown -R root:root .
 find -L . \
@@ -136,15 +136,6 @@ cd out/linux.$TARGET/release/bin/additions
 ## slackware > 14.2 already ships this
 #  install -m 644 vboxvideo_drv_$XSERVER.so \
 #    $PKG/usr/lib$LIBDIRSUFFIX/xorg/modules/drivers/vboxvideo_drv.so
-
-  install -m 644 VBoxOGLcrutil.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGLerrorspu.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGLarrayspu.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGLfeedbackspu.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGLpackspu.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGLpassthroughspu.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxOGL.so $PKG/usr/lib$LIBDIRSUFFIX
-  install -m 644 VBoxEGL.so $PKG/usr/lib$LIBDIRSUFFIX
 
   install -m 755 $CWD/vbox-uninstall-guest-additions $PKG/usr/sbin/
 cd -
