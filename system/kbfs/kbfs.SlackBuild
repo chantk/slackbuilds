@@ -3,6 +3,7 @@
 # Slackware build script for kbfs
 
 # Copyright 2017-2022 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
+# Copyright 2024 pyllyukko
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,8 +27,8 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=kbfs
 SRCNAM=keybase
-VERSION=${VERSION:-5.9.3_20220216215910}
-COMMITVER=c82d65a685
+VERSION=${VERSION:-6.5.1_20250428154451}
+COMMITVER=19f9cfeddb
 SRCVER=$(echo $VERSION | tr _ - )
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
@@ -46,6 +47,12 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
+if [ "${ARCH}" = "i586" ]
+then
+  echo "This architecture is no longer supported"
+  exit 1
+fi
+
 bailout() {
   echo "  You must have a $KBFS_USER user and $KBFS_GROUP group to run this script. "
   echo "    # groupadd -g $KBFS_GID $KBFS_GROUP "
@@ -60,9 +67,6 @@ elif ! grep -q "^$KBFS_GROUP:" /etc/group; then
   bailout
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -72,31 +76,12 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i586" ]; then
-  SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
-  DEBARCH=i386
-elif [ "$ARCH" = "i686" ]; then
-  SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
-  DEBARCH=i386
-elif [ "$ARCH" = "x86_64" ]; then
-  SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
-  DEBARCH=amd64
-else
-  SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
-  DEBARCH=i386
-fi
-
 set -e
-
 
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $PKG
-ar p $CWD/${SRCNAM}_${SRCVER}.${COMMITVER}_${DEBARCH}.deb data.tar.xz | tar xJv
+ar p $CWD/${SRCNAM}_${SRCVER}.${COMMITVER}_amd64.deb data.tar.xz | tar xJv
 cd $PKG
 chown -R root:root .
 find -L . \

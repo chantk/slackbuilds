@@ -36,8 +36,15 @@ config etc/svxlink/svxlink.d/ModuleSelCallEnc.conf.new
 config etc/svxlink/svxlink.d/ModulePropagationMonitor.conf.new
 config etc/svxlink/svxlink.d/ModuleMetarInfo.conf.new
 config etc/svxlink/svxlink.d/ModuleParrot.conf.new
+config etc/svxlink/svxlink.d/ModuleTrx.conf.new
 preserve_perms etc/rc.d/rc.svxlink.new
 
 if [ -x /usr/bin/update-desktop-database ]; then
   /usr/bin/update-desktop-database -q usr/share/applications >/dev/null 2>&1
+fi
+
+if [ -e usr/share/icons/hicolor/icon-theme.cache ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    /usr/bin/gtk-update-icon-cache -f usr/share/icons/hicolor >/dev/null 2>&1
+  fi
 fi

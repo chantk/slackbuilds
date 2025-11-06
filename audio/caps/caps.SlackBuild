@@ -2,7 +2,7 @@
 
 # Slackware build script for caps
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -97,7 +97,7 @@ if [ "${DOCS:-yes}" = "yes" ] && [ -e "$DOCFILE" ]; then
   ( cd $PKG/usr/doc/$PRGNAM-$VERSION
     tar xvf "$DOCFILE" --no-same-owner
     mv $PRGNAM-doc-unofficial_$DOCVER html
-    chown root.root html/*
+    chown root:root html/*
     chmod 644 html/*
   )
 fi

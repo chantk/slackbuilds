@@ -1,14 +1,14 @@
 PRGNAM="MuseScore"
-VERSION="3.6.2"
-HOMEPAGE="http://www.musescore.org/"
-DOWNLOAD="https://github.com/musescore/MuseScore/archive/v3.6.2/MuseScore-3.6.2.tar.gz \
-http://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General.sf3 \
-http://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General_License.md"
-MD5SUM="682c4a38b8b39d246d196c392ae08ab7 \
-        7b354559c7ef4e859a2bfad8738d477d \
-        bc7b4fbe58b37788876b6c36f19577d0"
-DOWNLOAD_x86_64=""
-MD5SUM_x86_64=""
-REQUIRES="jack portaudio portmidi"
-MAINTAINER="Klaatu"
-EMAIL="klaatu@member.fsf.org"
+VERSION="4.6.3"
+HOMEPAGE="https://github.com/musescore/MuseScore"
+DOWNLOAD="UNSUPPORTED"
+MD5SUM=""
+DOWNLOAD_x86_64="https://github.com/musescore/MuseScore/archive/v4.6.3/MuseScore-4.6.3.tar.gz \
+                 https://raw.githubusercontent.com/musescore/muse_deps/main//harfbuzz/7.1.0/harfbuzz_src.7z \
+                 https://raw.githubusercontent.com/musescore/muse_deps/main//harfbuzz/7.1.0/harfbuzz.cmake"
+MD5SUM_x86_64="f70b861d523ffefba2a086a79295d468 \
+               695d5daec954dc62409ba85b040b5092 \
+               cf9148f6e09761dbe15e3de38e6baced"
+REQUIRES="p7zip"
+MAINTAINER="Antonio Leal"
+EMAIL="antonioleal@yahoo.com"

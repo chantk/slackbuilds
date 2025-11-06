@@ -2,7 +2,7 @@
 #
 # Slackware build script for perl-SDL
 #
-# Copyright 2009-2017  Erik W. Hanson, Minneapolis, MN, USA
+# Copyright 2009-2022  Erik W. Hanson, Minneapolis, MN, USA
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -22,11 +22,11 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-SRCNAM=SDL
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=perl-SDL
-VERSION=${VERSION:-2.546}
+SRCNAM=SDL
+VERSION=${VERSION:-2.548}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -79,6 +79,8 @@ find -L . \
   -o -perm 511 \) -exec chmod 755 {} \; -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+export CFLAGS="$SLKCFLAGS -fpermissive -std=gnu17"
 
 perl Build.PL \
   prefix=/usr \

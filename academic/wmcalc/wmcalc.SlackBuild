@@ -25,8 +25,9 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Now maintained by B. Watson <yalhcru@gmail.com>
+# Now maintained by B. Watson <urchlay@slackware.uk>
 
+# 20221226 bkw: add missing update-desktop-database to doinst.sh, BUILD=2.
 # 20180911 bkw: update for v0.7.
 
 # 20160816 bkw:
@@ -47,7 +48,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=wmcalc
 VERSION=${VERSION:-0.7}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 

@@ -24,3 +24,29 @@ preserve_perms() {
 
 preserve_perms etc/rc.d/rc.unbound.new
 config etc/unbound/unbound.conf.new
+config etc/logrotate.d/unbound.new
+
+if [ -r /etc/logrotate.d/unbound ] && [ $(stat -c "%U:%G" "/etc/logrotate.d/unbound") != "root:root" ]; then
+ echo "Incorrect permissions detected on /etc/logrotate.d/unbound !"
+ echo "This will prevent Unbound logrotate script from working."
+ echo ""
+ echo "Previous Unbound SlackBuild scripts didn't set this correctly."
+ echo ""
+ echo "To fix it, simply run:"
+ echo "# chown root:root /etc/logrotate.d/unbound"
+fi
+
+echo "----------------------------"
+echo "As of Unbound SlackBuild 1.18.0-2 DNSSEC is enabled by default."
+echo
+echo "You have two options:"
+echo
+echo "1) Run the following command to setup the root trust anchor (RECOMMENDED!)"
+echo "# sudo -u unbound unbound-anchor -f /etc/resolv.conf -R -a /var/lib/unbound/root.key"
+echo
+echo "2) Disable DNSSEC and unbound-anchor functionality."
+echo "Edit /etc/unbound/unbound.conf, and erase or comment the following line:"
+echo 'auto-trust-anchor-file: "/var/lib/unbound/root.key"'
+echo
+echo "This is a suitable option if you plan to use Unbound simply as a forwarding resolver."
+echo "----------------------------"

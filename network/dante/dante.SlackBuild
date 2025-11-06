@@ -2,16 +2,19 @@
 
 # Slackware build script for dante
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
 # TODO: init script? Only if someone asks for it...
 
+# 20250131 bkw: update for v1.4.4.
+# 20230103 bkw: BUILD=2, fix broken symlinks.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=dante
-VERSION=${VERSION:-1.4.3}
+VERSION=${VERSION:-1.4.4}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -100,8 +103,8 @@ cat $CWD/README > $PKG/usr/doc/$PRGNAM-$VERSION/README.Slackware
 # Not going to install actual socks.conf and sockd.conf in /etc,
 # but at least symlink the examples where they can be found easily.
 mkdir -p $PKG/etc
-ln -s ../usr/doc/$PRGNAM-$VERSION/socks.conf $PKG/etc/socks.conf.example
-ln -s ../usr/doc/$PRGNAM-$VERSION/sockd.conf $PKG/etc/sockd.conf.example
+ln -s ../usr/doc/$PRGNAM-$VERSION/example/socks.conf $PKG/etc/socks.conf.example
+ln -s ../usr/doc/$PRGNAM-$VERSION/example/sockd.conf $PKG/etc/sockd.conf.example
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

@@ -2,7 +2,7 @@
 
 # Slackware build script for cam
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -27,7 +27,6 @@ if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   exit 0
 fi
 
-CWD=$(pwd)
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}

@@ -7,7 +7,10 @@ saving interface as well as an easy usage that mainly focuses on
 keyboard interaction.
 
 This build includes the zathura core and the zathura-pdf-poppler
-plugin.
+plugin, by default. If you don't want zathura-pdf-poppler, you can
+run the script with POPPLER=no set in the environment. In this case,
+zathura will be useless until you install at least one of the plugins
+listed below.
 
 Other plugins exist to support other file types:
 
@@ -24,3 +27,7 @@ Documentation on zathura's synctex support is poor; for some hints on
 using synctex with zathura, see:
 
 http://www.math.cmu.edu/~gautam/sj/blog/20140310-zathura-fsearch.html
+
+Note: This is not the latest version of zathura; it is the latest
+version that will build on Slackware 15.0. Don't expect this to be
+upgraded until after the next Slackware release.

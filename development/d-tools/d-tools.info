@@ -1,14 +1,14 @@
 PRGNAM="d-tools"
-VERSION="2.098.1"
+VERSION="2.111.0"
 HOMEPAGE="https://dlang.org"
-DOWNLOAD="https://download.dlackware.com/hosted-sources/d-tools/dub-1.27.0.tar.gz \
-          https://download.dlackware.com/hosted-sources/d-tools/tools-2.098.1.tar.gz \
-          https://download.dlackware.com/hosted-sources/d-tools/D-Scanner-0.11.1.tar.xz \
-          https://download.dlackware.com/hosted-sources/d-tools/DCD-0.13.6.tar.xz"
-MD5SUM="0e2ad3de45e6672cef00c74accb31a55 \
-        6f31eb580509add1768b6e3f26559e17 \
-        b266de4cdbbbe5270aaf4ae2eee47ab2 \
-        cfd5e4d24ba81aaffc08ea68dc833443"
+DOWNLOAD="https://download.dlackware.com/hosted-sources/d-tools/tools-2.111.0.tar.gz \
+          https://download.dlackware.com/hosted-sources/d-tools/DCD-0.15.2.tar.xz \
+          https://download.dlackware.com/hosted-sources/d-tools/D-Scanner-0.15.2.tar.xz \
+          https://download.dlackware.com/hosted-sources/d-tools/dub-1.40.0.tar.gz"
+MD5SUM="66bc7913c10aeae7af4be30fb19b6fe9 \
+        fe7c2b6664c34f45db40373a3cf3374a \
+        2b805ef7e3c2d0951d0c27cb479be67a \
+        d4b531247549c7453c8e2b9f9a805111"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
 REQUIRES="dmd"

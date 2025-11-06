@@ -2,6 +2,7 @@
 
 # Slackware build script for python3-pylint
 
+# Copyright 2022-2024 Dimitris Zlatanidis Orestiada, Greece
 # Copyright 2018 Markus Rinne Finland
 # All rights reserved.
 #
@@ -26,7 +27,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=python3-pylint
 SRCNAM=pylint
-VERSION=${VERSION:-2.10.1}
+VERSION=${VERSION:-3.2.0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -80,12 +81,8 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-python3 setup.py install --root=$PKG
-
-# Rename executables to avoid conflicts with Python 2 version of pylint.
-for executable in epylint pylint pyreverse symilar; do
-  mv $PKG/usr/bin/${executable}{,3}
-done
+python3 -m flit_core.wheel
+python3 -m installer -d "$PKG" dist/*.whl
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true

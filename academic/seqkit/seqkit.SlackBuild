@@ -2,7 +2,7 @@
 
 # Slackware build script for seqkit
 
-# Copyright 2020-2021 Petar Petrov slackalaxy@gmail.com
+# Copyright 2020-2023 Petar Petrov slackalaxy@gmail.com
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,24 +25,27 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=seqkit
-VERSION=${VERSION:-0.16.0}
+VERSION=${VERSION:-2.5.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 if [ -z "$ARCH" ]; then
-  ARCH=$( uname -m )
+  case "$( uname -m )" in
+    i?86) ARCH=i586 ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
 fi
 
 case "$ARCH" in
-  i?86) ARCH=i386
+  i?86)
     BINARCH="386"
     ;;
   x86_64)
     BINARCH="amd64"
     ;;
   *)
-    printf "\n\n%s\n" "$ARCH is not supported."
+    printf "\n\n%s\n" "$ARCH is not supported." >/dev/stderr
     exit 1
     ;;
 esac

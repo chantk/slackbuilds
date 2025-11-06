@@ -25,8 +25,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=grass
-VERSION=${VERSION:-7.8.0}
-SHRTVER=`echo $VERSION | sed "s/\([0-9]*\).\([0-9]*\)..*/\1\2/"`
+VERSION=${VERSION:-8.4.1}
+SHRTVER=$( echo $VERSION | sed "s/\([0-9]*\).\([0-9]*\)..*/\1\2/" )
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -39,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -82,8 +79,6 @@ find -L . \
 
 # Option handling:
 set -- $(echo $ENABLE | sed 's/,/ /g')
-
-patch -p1 < $CWD/gdal-3.3.patch
 
 while [ "$1" != "" ]; do
   case "$1"
@@ -132,9 +127,9 @@ done
 
 # geos now always enabled: it's an indirect hard dep (via gdal), and makes grass nicer :-)
 
+CPP="gcc -E -w" \
 CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS -fpermissive" \
-LDFLAGS="-ldl -lncurses" \
+CXXFLAGS="$SLKCFLAGS" \
 ./configure \
   --prefix=/opt \
   --exec-prefix=/wibble/usr \
@@ -164,19 +159,16 @@ find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
 
 # Install the pkgconfig file:
 install -D -m0644 grass.pc $PKG/usr/lib${LIBDIRSUFFIX}/pkgconfig/grass.pc
-
-# Create unversioned symlinks:
-( cd $PKG/opt ; ln -s $PRGNAM$SHRTVER $PRGNAM )
-( cd $PKG/usr/bin ; ln -s $PRGNAM$SHRTVER $PRGNAM )
-
 # Remove hardcoded version strings:
 sed -i -e "s/-${VERSION}//g" \
-  $PKG/usr/bin/$PRGNAM$SHRTVER \
   $PKG/usr/lib${LIBDIRSUFFIX}/pkgconfig/grass.pc
+
+# Create unversioned symlink:
+( cd $PKG/opt ; ln -s $PRGNAM$SHRTVER $PRGNAM )
 
 # Remove packaging directory pollution:
 sed -i -e "s;$PKG;;" \
-  $PKG/usr/bin/$PRGNAM$SHRTVER \
+  $PKG/usr/bin/$PRGNAM \
   $PKG/opt/$PRGNAM$SHRTVER/demolocation/.grassrc$SHRTVER \
   $PKG/opt/$PRGNAM$SHRTVER/etc/fontcap \
   $PKG/opt/$PRGNAM$SHRTVER/include/Make/Grass.make \
@@ -189,20 +181,18 @@ for i in $( find $PKGOPTMAN -type l ) ; do \
   ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 mkdir -p $PKG/usr/man/man1
 cp -a \
-  $PKGOPTMAN/man1/grass7.1.gz \
+  $PKGOPTMAN/man1/grass.1.gz \
   $PKG/usr/man/man1/grass.1.gz
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS CHANGES COPYING GPL.TXT REQUIREMENTS.html INSTALL README.md SUBMITTING* TODO \
+  AUTHORS COPYING GPL.TXT *.md TODO \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 # Desktop:
 mkdir -p $PKG/usr/share/applications
-cp -a \
-  $CWD/$PRGNAM.desktop \
-  $PKG/usr/share/applications/$PRGNAM.desktop
+install -D -m0644 $CWD/$PRGNAM.desktop $PKG/usr/share/applications/$PRGNAM.desktop
 mkdir -p $PKG/usr/share/pixmaps
 cp -a \
   gui/icons/$PRGNAM-64x64.png \
@@ -210,7 +200,6 @@ cp -a \
 
 # Cleanup:
 rm -rf $PKG/opt/$PRGNAM/demolocation/PERMANENT/.tmp
-rm $PKG/opt/$PRGNAM/config.status
 rm -rf $PKG/opt/$PRGNAM/share/
 
 mkdir -p $PKG/install

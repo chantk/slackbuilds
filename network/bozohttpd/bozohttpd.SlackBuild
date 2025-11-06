@@ -22,8 +22,11 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Now maintained by B. Watson <yalhcru@gmail.com>.
+# Now maintained by B. Watson <urchlay@slackware.uk>.
 
+# 20241017 bkw: BUILD=2, update for lua's 5.4 update.
+# 20240206 bkw: Update for v20240126.
+# 20230103 bkw: Update for v20220517.
 # 20210911 bkw: Update for v20210227.
 # 20201102 bkw: Update for v20201014.
 # 20191201 bkw: Update for v20190228.
@@ -50,8 +53,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=bozohttpd
-VERSION=${VERSION:-20210227}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-20240126}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -74,16 +77,12 @@ OUTPUT=${OUTPUT:-/tmp}
 
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
 fi
 
 set -e
@@ -110,35 +109,24 @@ sed -i '/^CRYPTOLIBS/s,$, -lcrypt,' Makefile.boot
 # doesn't disable it. I've tested this with the printenv.lua script
 # and it seems to work fine.
 
-# 20181203 bkw: bozohttpd-20170201 was the last version that worked
-# with lua 5.1 (SBo's lua build). Starting with 20181125, at least
-# lua 5.2 is required (5.3 also works). This is more complex than I'd
-# like it to be, but it does work.
-LUA="${LUA:-yes}"
+# 20241017 bkw: now that SBo's lua is v5.4, the logic here got a lot
+# simpler.
 
+LUA="${LUA:-yes}"
 case "$LUA" in
   # LUA=yes: autodetect
-  yes) if lua5.3 -v &> /dev/null; then
-          LUA=5.3
-       elif lua5.2 -v &> /dev/null; then
-          LUA=5.2
+  yes) if [ "$( lua -v | cut -d' ' -f2 | cut -d. -f1,2 )" = "5.4" ]; then
+          LUA=5.4
        else
           LUA=no
        fi
        ;;
 
-  # LUA=<version>: use that version, or die
-  5.2|5.3) if ! lua$LUA -v &> /dev/null; then
-              echo "!!! lua v$LUA support requested, but lua${LUA/./} not installed" 2>&1
-              exit 1
-           fi
-           ;;
-
   # LUA=no: accept and do nothing
   no) ;;
 
   # Anything else is a fail
-  *)  echo "Invalid LUA value '$LUA'. Supported values are: yes no 5.2 5.3" 2>&1
+  *)  echo "Invalid LUA value '$LUA'. Supported values are: yes no" 2>&1
       exit 1
       ;;
 esac
@@ -146,14 +134,13 @@ esac
 # 20220207 bkw: due to 15.0's newer gcc, non-lua and lua 5.2 builds
 # were failing (and I didn't notice right away because I keep lua 5.3
 # installed).
-sed -i '1i#include <stdint.h>' $PRGNAM.c
+#sed -i '1i#include <stdint.h>' $PRGNAM.c
 
 echo "=== LUA='$LUA'"
-if [ "$LUA" != "no" ] && lua$LUA -v &>/dev/null; then
-  LUAOPT="-I/usr/include/lua$LUA"
+if [ "$LUA" != "no" ]; then
   WITHLUA="with lua $LUA"
   EXTRADOC="printenv.lua"
-  sed -i '/^CRYPTOLIBS/s,$, -llua'"$LUA"',' Makefile.boot
+  sed -i '/^CRYPTOLIBS/s,$, -llua,' Makefile.boot
   sed -i 's,/usr/libexec/httpd,bozohttpd,' printenv.lua
 else
   LUAOPT="-DNO_LUA_SUPPORT"
@@ -198,6 +185,9 @@ sed -i \
 # Probably doesn't hurt anything, but might cause problems later.
 # More worrisome is missing crypt() prototype (causes implicit pointer
 # to int casts, baaaaad, especially on 64-bit).
+# 20240206 bkw: rather than try to figure out why #define _XOPEN_SOURCE
+# doesn't provide a prototype for strptime(), and #define _GNU_SOURCE
+# doesn't give us vasprintf(), just put the damn prototypes in the patch.
 patch -p1 < $CWD/fix_warnings.diff
 
 # Fix build (from Arch Linux' AUR).

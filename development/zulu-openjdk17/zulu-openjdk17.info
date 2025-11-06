@@ -1,10 +1,14 @@
 PRGNAM="zulu-openjdk17"
-VERSION="17.0.2"
+VERSION="17.0.14"
 HOMEPAGE="https://www.azul.com/downloads/"
-DOWNLOAD="https://cdn.azul.com/zulu/bin/zulu17.32.13-ca-jdk17.0.2-linux_i686.tar.gz"
-MD5SUM="7d0f12884ce51289cb4520e2abb7afd3"
-DOWNLOAD_x86_64="https://cdn.azul.com/zulu/bin/zulu17.32.13-ca-jdk17.0.2-linux_x64.tar.gz"
-MD5SUM_x86_64="159fc999c02b9cf3e78028f769981c72"
+DOWNLOAD="https://cdn.azul.com/zulu-embedded/bin/zulu17.56.15-ca-jdk17.0.14-c2-linux_aarch32hf.tar.gz \
+          https://cdn.azul.com/zulu/bin/zulu17.56.15-ca-jdk17.0.14-linux_i686.tar.gz"
+MD5SUM="16504778cd07fee8ddba6e3981dc2309 \
+        6c58c0dd34cfebf36e2e06d626acccf8"
+DOWNLOAD_x86_64="https://cdn.azul.com/zulu/bin/zulu17.56.15-ca-jdk17.0.14-linux_x64.tar.gz \
+                 https://cdn.azul.com/zulu/bin/zulu17.56.15-ca-jdk17.0.14-linux_aarch64.tar.gz"
+MD5SUM_x86_64="501eec07349d70cbbd5ca51f318ee311 \
+               f9674d9427b124b6156b897d8379d0fc"
 REQUIRES=""
-MAINTAINER="Sébastien Ballet"
-EMAIL="slacker6896@gmail.com"
+MAINTAINER="Andrew Clemons"
+EMAIL="andrew.clemons@gmail.com"

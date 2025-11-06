@@ -22,11 +22,13 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20241017 bkw: Modified by SlackBuilds.org, BUILD=2: update for lua 5.4.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=conky
-VERSION=${VERSION:-1.12.2}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-1.22.2}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -38,9 +40,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -93,12 +92,9 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
-
-# fix MANDIR
-sed -i 's,share/man/man1,man/man1,g' CMakeLists.txt
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
 mkdir -p build
 cd build
@@ -108,25 +104,30 @@ cd build
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DLIB_SUFFIX=${LIBDIRSUFFIX} \
     -DDOC_PATH=/usr/doc/$PRGNAM-$VERSION \
-    -DMAINTAINER_MODE=ON \
-    -DBUILD_DOCS=ON \
+    -DMAINTAINER_MODE=OFF \
+    -DBUILD_DOCS=OFF \
+    -DBUILD_EXTRAS=ON \
     -DBUILD_XDBE=ON \
     -DBUILD_AUDACIOUS=$audacious \
     -DBUILD_NVIDIA=$nvidia \
     -DBUILD_CURL=ON \
     -DBUILD_WLAN=ON \
     -DBUILD_RSS=ON \
-    -DBUILD_WEATHER_METAR=ON \
     -DBUILD_PULSEAUDIO=ON \
     -DBUILD_MPD=ON \
     -DBUILD_IMLIB2=ON \
     -DBUILD_LUA_CAIRO=ON \
     -DBUILD_LUA_IMLIB2=ON \
+    -DBUILD_WAYLAND=ON \
+    -DBUILD_MOUSE_EVENTS=ON \
     -DCMAKE_BUILD_TYPE=Release ..
 
   make
   make install DESTDIR=$PKG
 cd ..
+
+# Delete the duplicate, and wrong location, vim and nano syntax files.
+rm -rf $PKG/{vim,nano}
 
 # Don't ship .a files:
 find $PKG -type f -iname '*.a' -exec rm -rf {} \+
@@ -134,8 +135,11 @@ find $PKG -type f -iname '*.a' -exec rm -rf {} \+
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
-find $PKG/usr/man -type f -exec gzip -9 {} \;
-for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+# Conky now requires pandoc to generate the man pages.  
+# No need to add that dependency, we will use the
+# man page provided by the conky team.
+mkdir -p $PKG/usr/man/man1
+cp $CWD/conky.1.gz $PKG/usr/man/man1
 
 # Copy existing config files
 mkdir -p $PKG/etc/conky
@@ -145,9 +149,9 @@ cp data/conky_no_x11.conf $PKG/etc/conky/conky_no_x11.conf.new
 # Vim and Nano syntax highlighting files
 mkdir -p $PKG/usr/share/nano
 mkdir -p $PKG/usr/share/vim/vimfiles/{syntax,ftdetect}
-cp extras/vim/syntax/conkyrc.vim $PKG/usr/share/vim/vimfiles/syntax
+cp build/extras/vim/syntax/conkyrc.vim $PKG/usr/share/vim/vimfiles/syntax
 cp extras/vim/ftdetect/conkyrc.vim $PKG/usr/share/vim/vimfiles/ftdetect
-cp extras/nano/conky.nanorc $PKG/usr/share/nano/conky.nanorc
+cp build/extras/nano/conky.nanorc $PKG/usr/share/nano/conky.nanorc
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a AUTHORS COPYING LICENSE.BSD README.md \

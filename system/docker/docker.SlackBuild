@@ -26,8 +26,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=docker
-VERSION=${VERSION:-20.10.11}
-GITHASH=${GITHASH:-e2f740d}
+VERSION=${VERSION:-28.3.1}
+GITHASH=${GITHASH:-5beb93d}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -42,9 +42,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -69,19 +66,22 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-mkdir build
-mv vendor build/src
-ln -sf $TMP/$SRCNAM-$VERSION build/src/github.com/docker/docker
+mkdir -p src/github.com/docker
+ln -sf "$(pwd)" src/github.com/docker/docker
 
-GO111MODULE=auto \
+AUTO_GOPATH=1 \
+GO111MODULE=off \
 DOCKER_GITCOMMIT=$GITHASH \
 DOCKER_BUILDTAGS="seccomp" \
 VERSION=$VERSION \
-GOPATH=$TMP/$SRCNAM-$VERSION/build \
+GOPATH="$(pwd)" \
 ./hack/make.sh dynbinary
 
-install -D -m 0755 bundles/dynbinary-daemon/dockerd-$VERSION \
+install -D -m 0755 bundles/dynbinary-daemon/dockerd \
   $PKG/usr/bin/dockerd
+
+install -D -m 0755 bundles/dynbinary-daemon/docker-proxy \
+  $PKG/usr/bin/docker-proxy
 
 # Integrate required components.
 ln -s runc $PKG/usr/bin/docker-runc

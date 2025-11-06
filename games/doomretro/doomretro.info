@@ -1,10 +1,12 @@
 PRGNAM="doomretro"
-VERSION="4.2.3"
+VERSION="5.5.1"
 HOMEPAGE="https://www.doomretro.com"
-DOWNLOAD="https://github.com/bradharding/doomretro/archive/v4.2.3/doomretro-4.2.3.tar.gz"
-MD5SUM="809a9f73b7892dca8e4103867fe85c93"
+DOWNLOAD="https://github.com/bradharding/doomretro/archive/v5.5.1/doomretro-5.5.1.tar.gz \
+          https://slackware.uk/slackware/slackware64-15.0/source/l/SDL2_mixer/SDL2_mixer-2.0.4.tar.lz"
+MD5SUM="1c000b9b5c738234513a27da41cac4c6 \
+        7ff96cc9ed7855d2a92a92f3c23856ef"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
 REQUIRES=""
 MAINTAINER="B. Watson"
-EMAIL="yalhcru@gmail.com"
+EMAIL="urchlay@slackware.uk"

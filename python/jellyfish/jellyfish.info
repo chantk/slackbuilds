@@ -1,10 +1,12 @@
 PRGNAM="jellyfish"
-VERSION="0.6.0"
+VERSION="1.2.1"
 HOMEPAGE="https://github.com/sunlightlabs/jellyfish"
-DOWNLOAD="https://pypi.python.org/packages/cb/bb/2362099ca5d680e39f75a37b2c8f677fc2d3dda94ce51b3738feff58d136/jellyfish-0.6.0.tar.gz"
-MD5SUM="cedb078a7c1f3f42029217d39869bb0f"
+DOWNLOAD="https://files.pythonhosted.org/packages/source/j/jellyfish/jellyfish-1.2.1.tar.gz \
+          https://slackware.uk/~fourtysixandtwo/src/jellyfish-vendored-sources-1.2.1-1.tar.xz"
+MD5SUM="c9abacc7269a77d29674fde13b883a0e \
+        98ca01ce452d884d6fe988a5da75c554"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
-REQUIRES=""
-MAINTAINER="Dimitris Zlatanidis"
-EMAIL="d.zlatanidis@gmail.com"
+REQUIRES="python3-maturin"
+MAINTAINER="fourtysixandtwo"
+EMAIL="fourtysixandtwo@sliderr.net"

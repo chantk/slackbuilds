@@ -25,8 +25,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=inkscape
-VERSION=${VERSION:-1.1.2}
-EXTRAVER=${EXTRAVER:-2022-02-04_0a00cf5339}
+VERSION=${VERSION:-1.4.2}
+EXTRAVER=${EXTRAVER:-2025-05-08_ebf0e940d0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -39,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -71,7 +68,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf ${PRGNAM}-${VERSION}_${EXTRAVER}
-tar xvf $CWD/$PRGNAM-$VERSION.tar.?z*
+tar xvf $CWD/${PRGNAM}-${VERSION}.tar.?z*
 cd ${PRGNAM}-${VERSION}_${EXTRAVER}
 chown -R root:root .
 find -L . \
@@ -80,8 +77,10 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-# strip invalid tag
-sed -i /url/d org.inkscape.Inkscape.appdata.xml.in
+patch -p1 < $CWD/poppler-25.06.patch
+patch -p1 < $CWD/poppler-25.07.patch
+patch -p1 < $CWD/poppler-25.09.patch
+patch -p1 < $CWD/poppler-25.10.patch
 
 # https://bugs.launchpad.net/inkscape/+bug/314381
 # a couple of files have executable bits set,
@@ -90,12 +89,6 @@ find . -name '*.cpp' | xargs chmod -x
 find . -name '*.h' | xargs chmod -x
 # Fix end of line encodings
 dos2unix -k -q share/extensions/*.py
-
-# Fix man page location:
-sed -i CMakeScripts/Pod2man.cmake -e "s/SHARE_INSTALL/CMAKE_INSTALL_PREFIX/g"
-
-# patch from archlinux
-#patch -p1 < $CWD/poppler-21.11.0.patch
 
 mkdir -p build
 cd build
@@ -111,16 +104,13 @@ cd build
     -DCMAKE_INSTALL_MANDIR=/usr/man \
     -DCMAKE_INSTALL_SYSCONFDIR=/etc \
     -DBUILD_SHARED_LIBS=ON \
-    -DWITH_DBUS=ON \
     -DWITH_GRAPHICS_MAGICK=ON \
     -DWITH_IMAGE_MAGICK=OFF \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.10 \
     ..
   make
   make install DESTDIR=$PKG
 cd ..
-
-# inkscape no longer uses: (deprecated cmake variable.)
-#    -DINKSCAPE_INSTALL_LIBDIR=/usr/lib${LIBDIRSUFFIX} \
 
 # From this version on inkscape install its separate library in
 # /usr/lib$LIBDIRSUFFIX/$PRGNAM that's not on the binary LD_LIBRARY_PATH
@@ -133,7 +123,7 @@ find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS COPYING* README* TRANSLATORS LICENSES *.md doc/* \
+  AUTHORS CONTRIBUTING.md COPYING INSTALL.md NEWS.md README.md TRANSLATORS LICENSES doc/* \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 find $PKG/usr/doc -name "Makefile*" -exec rm {} \;

@@ -4,7 +4,7 @@
 
 # Copyright 2009  Patrick J. Volkerding, Sebeka, MN, USA
 # Copyright 2009 - 2014  Robby Workman, Northport, AL, USA
-# Copyright 2016 - 2022  Johannes Schoepfer, Germany
+# Copyright 2016 - 2023  Johannes Schoepfer, Germany
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,16 +27,11 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=texlive-extra
-TEXMFVERSION=${TEXMFVERSION:-210418}
-VERSION=${VERSION:-2021.210418}
+TEXMFVERSION=${TEXMFVERSION:-240409}
+VERSION=${VERSION:-2024.240409}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
-
-if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
-  echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
-  exit 0
-fi
 
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
@@ -52,6 +47,11 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
+if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
+  echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
+  exit 0
+fi
+
 TEXMFROOT=/usr/share
 
 rm -rf $PKG
@@ -64,20 +64,12 @@ chmod -R u+w,go-w,a+rX-st $PKG
 mv $PKG$TEXMFROOT/texmf-dist/linked_scripts/* $PKG/usr/bin
 rmdir $PKG$TEXMFROOT/texmf-dist/linked_scripts
 
-# Move biber binary to $PATH
-case $ARCH in
-	"x86_64") mv $PKG$TEXMFROOT/texmf-dist/bin/x86_64-linux/biber $PKG/usr/bin ;;
-	"i586") mv $PKG$TEXMFROOT/texmf-dist/bin/i386-linux/biber $PKG/usr/bin ;;
-esac
-rm -rf $PKG$TEXMFROOT/texmf-dist/bin
-
 # Install index of provided tex packages to the docs
 mv $PKG$TEXMFROOT/texmf-dist/packages.extra.gz $PKG/usr/doc/texlive-$VERSION
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
-cat $CWD/doinst.sh > $PKG/install/doinst.sh
 cat $CWD/slack-desc > $PKG/install/slack-desc
 
 cd $PKG

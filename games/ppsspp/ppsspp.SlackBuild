@@ -3,7 +3,7 @@
 # Slackware build script for ppsspp
 
 # Copyright 2016  Hunter Sezen California, USA
-# Copyright 2019-2020  Ruoh-Shoei LIN
+# Copyright 2019-2024  Ruoh-Shoei LIN
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -23,16 +23,10 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# 20210218 bkw: modified by SlackBuilds.org. Use correct filenames
-# in the github URLs for the 'submodules'. This is needed because
-# we don't get to decide what user-agent the user downloads files
-# with. If the Content-Disposition header is honored (e.g. files
-# downloaded with a web browser), this build failed.
-
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=ppsspp
-VERSION=${VERSION:-1.10.3}
+VERSION=${VERSION:-1.19.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -77,25 +71,8 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
+tar xvf $CWD/$PRGNAM-$VERSION.tar.?z
 cd $PRGNAM-$VERSION
-
-# The submodules are in a separate archive. This is equivalent to
-# git submodule update --init --recursive
-tar -xvf $CWD/glslang-d0850f8*.tar.gz \
-    -C ext/glslang --strip-components=1
-tar -xvf $CWD/ppsspp-lang-1c64b8f*.tar.gz \
-    -C assets/lang --strip-components=1
-tar -xvf $CWD/SPIRV-Cross-a1f7c8d*.tar.gz \
-    -C ext/SPIRV-Cross --strip-components=1
-tar -xvf $CWD/armips-7885552*.tar.gz \
-    -C ext/armips --strip-components=1
-tar -xvf $CWD/ppsspp-ffmpeg-55147e5*.tar.gz \
-    --exclude '*/Windows*' --exclude '*/android' \
-    --exclude '*/ios' --exclude '*/blackberry'\
-    --exclude '*/macosx' --exclude '*/wiiu' \
-    --exclude '*/symbian' \
-    -C ffmpeg --strip-components=1
 
 chown -R root:root .
 find -L . \
@@ -104,64 +81,63 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-# This does build with Slackware 14.2's CMake.
-sed -i 's/VERSION 3.6/VERSION 3.5.2/' CMakeLists.txt
-
 # Don't force explicit ccache invocation.
 sed -i -e '/include(ccache)/d' CMakeLists.txt
 
 # set git-version
 sed -i "s/unknown/${VERSION}/" git-version.cmake
 
-mkdir -p build-qt build-sdl
+SYSTEM_FFMPEG=${SYSTEM_FFMPEG:-OFF}
+if [ "$SYSTEM_FFMPEG" = "OFF" ]; then
+    cd ffmpeg
+    if [ "$ARCH" = "i586" ]; then
+	./linux_x86.sh
+    elif [ "$ARCH" = "x86_64" ]; then
+	./linux_x86-64.sh
+    elif [ "$ARCH" = "arm" ]; then
+	./linux_arm64_native.sh
+    else
+	./linux_"${ARCH}".sh
+    fi
+    cd ..
+fi
 
-QT=${QT:-off}
-if [ "$QT" = "on" ]; then
-    cd build-qt
-    cmake \
+if [ "${QT:-OFF}" = "ON" ]; then
+    cmake -B build-qt \
 	-DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
 	-DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
 	-DCMAKE_INSTALL_PREFIX=/usr \
 	-DCMAKE_SKIP_RPATH=TRUE \
-	-Wno-dev \
 	-DUSING_QT_UI=ON \
 	-DUSE_SYSTEM_LIBZIP=ON \
+	-DUSE_SYSTEM_FFMPEG="${SYSTEM_FFMPEG}" \
 	-DUSE_DISCORD=OFF \
-	-DCMAKE_BUILD_TYPE=Release ..
-    make
-    cd ..
-    install -Dm755 build-qt/PPSSPPQt $PKG/usr/games/ppsspp-qt
-    install -Dm644 $CWD/ppsspp-qt.desktop $PKG/usr/share/applications/ppsspp-qt.desktop
+	-DUSE_SYSTEM_ZSTD=ON \
+	-DCMAKE_BUILD_TYPE=Release
+    make -C build-qt
+    install -Dm755 build-qt/PPSSPPQt -t $PKG/usr/bin/
+    install -Dm644 build-qt/ppsspp.desktop $PKG/usr/share/applications/PPSSPPQt.desktop
 fi
 
-cd build-sdl
-cmake \
-  -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-  -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
-  -DCMAKE_INSTALL_PREFIX=/usr \
-  -DCMAKE_SKIP_RPATH=TRUE \
-  -Wno-dev \
-  -DUSING_QT_UI=OFF \
-  -DHEADLESS='ON' \
-  -DUSE_SYSTEM_LIBZIP=ON \
-  -DUSE_DISCORD=OFF \
-  -DCMAKE_BUILD_TYPE=Release ..
-make
-cd ..
-install -Dm755 build-sdl/PPSSPPHeadless $PKG/usr/games/ppsspp-headless
-install -Dm755 build-sdl/PPSSPPSDL $PKG/usr/games/ppsspp-sdl
-
-mkdir -p $PKG/usr/{games,share/{applications,icons/hicolor,pixmaps,ppsspp}}
-install -Dm644 $CWD/ppsspp.desktop $PKG/usr/share/applications/ppsspp.desktop
-cp -r assets $PKG/usr/share/ppsspp
-cp -r icons/hicolor/* $PKG/usr/share/icons/hicolor
-cp icons/icon-512.svg $PKG/usr/share/pixmaps/ppsspp.svg
+cmake -B build-sdl \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_SKIP_RPATH=TRUE \
+    -DUSING_QT_UI=OFF \
+    -DUSE_SYSTEM_LIBZIP=ON \
+    -DUSE_SYSTEM_FFMPEG="${SYSTEM_FFMPEG}" \
+    -DUSE_DISCORD=OFF \
+    -DUSE_SYSTEM_ZSTD=ON \
+    -DCMAKE_BUILD_TYPE=Release
+make -C build-sdl
+make install DESTDIR=$PKG -C build-sdl
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -v LICENSE.TXT README.md history.md headless/headless.txt $PKG/usr/doc/$PRGNAM-$VERSION
+install -Dm644 LICENSE.TXT README.md history.md \
+   -t $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

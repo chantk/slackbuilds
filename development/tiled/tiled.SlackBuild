@@ -27,10 +27,11 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=tiled
-VERSION=${VERSION:-1.8.2}
+VERSION=${VERSION:-20250917_36a2b40}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
+COMMIT=${COMMIT:-36a2b405641f4d667f534248840d29aebf21ec36}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -40,9 +41,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -61,6 +59,9 @@ elif [ "$ARCH" = "i686" ]; then
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
   LIBDIRSUFFIX="64"
+elif [ "$ARCH" = "aarch64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
   LIBDIRSUFFIX=""
@@ -71,9 +72,9 @@ set -e
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
-cd $PRGNAM-$VERSION
+rm -rf $PRGNAM-$COMMIT
+tar xvf $CWD/$PRGNAM-$COMMIT.tar.gz
+cd $PRGNAM-$COMMIT
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
@@ -81,25 +82,19 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-# patch to force the right library path to be used for libtiled plugins directory
-# it was always using ../lib/tiled/plugins/ even on x86_64 where the plugins were
-# stored by the installer itself on $LIBDIR/tiled/plugins/
-# This patch is therefore only useful when $LIBDIR=/usr/lib64/
-# Compilation itself would break as linking was done with ../lib/ even when the libs
-# are stored on ../lib64/
-if [ "$ARCH" = "x86_64" ]; then
-  patch -p0 < $CWD/tiled_lib64.patch
-fi
+qbs setup-toolchains --detect
 
-qbs setup-qt /usr/bin/qmake-qt5 qt5
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
-  qbs profile:qt5 qbs.installPrefix:"/usr" projects.Tiled.useRPaths:false
+  qbs qbs.installPrefix:"/usr" projects.Tiled.useRPaths:false
 
 qbs install --install-root $PKG
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+[ ! -d $PKG/usr/lib$LIBDIRSUFFIX ] && mv $PKG/usr/lib $PKG/usr/lib$LIBDIRSUFFIX
+	
 
 mv $PKG/usr/share/man $PKG/usr/man
 

@@ -2,7 +2,7 @@
 #
 # Slackware build script for dpkg.
 #
-# Copyright 2016-2021  Edinaldo P. Silva, Rio de Janeiro, Brazil.
+# Copyright 2016-2025  Edinaldo P. Silva, Rio de Janeiro, Brazil.
 # Copyright 2009 Marco Bonetti <sid77@slackware.it>
 # All rights reserved.
 #
@@ -26,8 +26,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=dpkg
-VERSION=${VERSION:-1.21.1}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-1.22.19}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -39,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -88,10 +85,18 @@ CXXFLAGS="$SLKCFLAGS" \
   --sysconfdir=/etc \
   --localstatedir=/var \
   --mandir=/usr/man \
+  --infodir=/usr/info \
   --docdir=/usr/doc/$PRGNAM-$VERSION \
+  --enable-silent-rules \
+  --disable-compiler-warnings \
+  --disable-dselect \
   --disable-devel-docs \
   --disable-start-stop-daemon \
-  --enable-silent-rules \
+  --disable-update-alternatives \
+  --with-libz \
+  --with-libbz2 \
+  --with-liblzma \
+  --host=$ARCH-slackware-linux \
   --build=$ARCH-slackware-linux
 
 make
@@ -102,6 +107,7 @@ find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
 
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+rm -rf $PKG/usr/man/man8
 
 DOCS="debian/changelog doc/README* ABOUT-NLS \
 AUTHORS COPYING NEWS README* THANKS TODO"

@@ -25,11 +25,12 @@
 # 20220222 bkw: Modified by SlackBuilds.org: fix build on 15.0,
 # by upgrading to v2.6.0. Also actually strip the binaries, and
 # get rid of INSTALL from the doc dir.
+# 20220320 bkw: fix build on 32-bit.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=luminance-hdr
-VERSION=${VERSION:-2.6.0}
+VERSION=${VERSION:-2.6.1.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -79,15 +80,26 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
+# Apply patches from gentoo
+for i in $CWD/patches/* ; do patch -p1 < $i ; done
+
 # Workround build failure with gcc-g++-4.9.3 and beyond (mangling bug?)
 # (fails to link libmvec: "undefined reference to `_ZGVbN4vv_powf'" etc)
 export CXX=clang++
 
+# Fix for boost >= 1.85.0
+sed -i \
+  '/constants\/constants/i #include <boost/numeric/conversion/bounds.hpp>' \
+  src/Libpfs/manip/resize.hxx
+
+# 20220320 bkw: for some reason, the -latomic is needed on 32-bit x86.
+# it does no harm on x86_64.
 mkdir -p build
 cd build
   cmake \
     -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_LINK_FLAGS="-latomic" \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release ..
   make

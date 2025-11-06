@@ -2,17 +2,20 @@
 
 # Slackware build script for ncp
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
+# 20250514 bkw: BUILD=5, fix ncp command (npush and npoll were already OK).
+# 20230706 bkw: BUILD=4, someone updated libowfat and broke my build.
+# 20230103 bkw: BUILD=3, how did I miss broken symlinks?
 # 20220207 bkw: BUILD=2, libowfat changed its dir structure.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=ncp
 VERSION=${VERSION:-1.2.4}
-BUILD=${BUILD:-2}
+BUILD=${BUILD:-5}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -61,15 +64,25 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 chmod 644 *
 
+# Fix from upstream's CVS. The libowfat socket API changed slightly.
+patch -p1 < $CWD/fix-ncp-command.diff
+
 # We want symlinks, not hardlinks.
 sed -i 's,ln -f,ln -s,' GNUmakefile
 
 # The libowfat detection stuff needs a little help...
 
-make PREFIX=/usr CFLAGS="$SLKCFLAGS -Wl,-s -I/opt/diet/include/libowfat -L$L"
+INC="-I/opt/diet/include/libowfat -I/opt/diet/include"
+make PREFIX=/usr CFLAGS="$SLKCFLAGS -Wl,-s $INC -L$L"
 make install PREFIX=$PKG/usr
 gzip $PKG/usr/man/man1/*.1
 ln -s npush.1.gz $PKG/usr/man/man1/npoll.1.gz
+
+# 20230103 bkw: grrr. no DESTDIR support in the Makefile, so we get
+# broken symlinks.
+rm -f $PKG/usr/bin/{npush,npoll}
+ln -s ncp $PKG/usr/bin/npush
+ln -s ncp $PKG/usr/bin/npoll
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a NEWS $PKG/usr/doc/$PRGNAM-$VERSION

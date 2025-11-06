@@ -3,7 +3,7 @@
 # Slackware build script for mgba
 
 # Copyright 2015 Dugan Chen Canada
-# Copyright 2019-2021 Ruoh-Shoei LIN
+# Copyright 2019-2025 Ruoh-Shoei LIN
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=mgba
-VERSION=${VERSION:-0.9.0}
+VERSION=${VERSION:-0.10.5}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -50,9 +50,6 @@ fi
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
-
-# Set to on to build the Qt GUI. Requires Qt 5.
-QT=${QT:-off}
 
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
@@ -83,10 +80,15 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+# Fix build with GCC >=14
+if [ "${CURRENT:-OFF}" = "ON" ]; then
+    CURRENT_CFLAGS=" -Wno-incompatible-pointer-types"
+fi
+
 mkdir -p build
 cd build
   cmake \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS ${CURRENT_CFLAGS}" \
     -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_BINDIR=games \
@@ -94,7 +96,9 @@ cd build
     -DCMAKE_INSTALL_LIBDIR:PATH=lib$LIBDIRSUFFIX \
     -DMANDIR=man \
     -DUSE_DISCORD_RPC=OFF \
-    -DBUILD_QT=${QT:-on} \
+    -DBUILD_UPDATER=OFF \
+    -DBUILD_QT=${QT:-ON} \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=Release ..
   make
   make install DESTDIR=$PKG
@@ -107,7 +111,8 @@ find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp CONTRIBUTING.md PORTING.md \
+cp -a CONTRIBUTING.md PORTING.md LICENSE CHANGES \
+   README.md README_DE.md README_ES.md README_ZH_CN.md \
    $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

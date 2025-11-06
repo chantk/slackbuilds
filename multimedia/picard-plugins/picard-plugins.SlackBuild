@@ -3,7 +3,7 @@
 # Slackware build script for "picard-plugins".
 
 # Copyright 2015 Marcel Saegebarth <marc@mos6581.de>
-# Copyright 2018-2022  Jeremy Hansen <jebrhansen+SBo -at- gmail.com>
+# Copyright 2018-2025 Jeremy Hansen <jebrhansen+SBo -at- gmail.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=picard-plugins
-DSTNAM=picard
-VERSION=${VERSION:-dac5623}
-COMMIT=${COMMIT:-dac5623f0aa7105fd0643f00795ff122e9c902c2}
+VERSION=${VERSION:-277aa4d}
+COMMIT=${COMMIT:-277aa4dddfe61b2a205f3088aa042e7178057e12}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -43,9 +42,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -54,16 +50,6 @@ fi
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
-
-if [ "$ARCH" = "i586" ]; then
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "i686" ]; then
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "x86_64" ]; then
-  LIBDIRSUFFIX="64"
-else
-  LIBDIRSUFFIX=""
-fi
 
 set -e
 
@@ -80,13 +66,23 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-PYTHONDIR=$(python -c "import sys, os; print os.path.join('/usr/lib${LIBDIRSUFFIX}', 'python%s' % sys.version[:3], 'site-packages')")
-mkdir -p $PKG/$PYTHONDIR/$DSTNAM/plugins
-(
-  cd plugins
-  find . -maxdepth 2 -name '__init__.py' -printf '%h\n'|xargs mv -t $PKG/$PYTHONDIR/$DSTNAM/plugins/
-  cp -a */* $PKG/$PYTHONDIR/$DSTNAM/plugins/
-)
+PYTHONDIR=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+PLUGINDIR=$PKG/$PYTHONDIR/picard/plugins
+mkdir -p $PLUGINDIR
+
+# Delete haikuattrs plugin as it is only for the Haiku operating system
+rm -rf plugins/haikuattrs
+
+# Move over all directories containing __init__.py
+find plugins/ -maxdepth 2 -name '__init__.py' -printf '%h\n' | xargs mv -t $PLUGINDIR
+
+# Copy over all the remaining .py files
+cp plugins/*/*.py $PLUGINDIR
+
+# Delete bpm plugin if aubio & python3-numpy dependencies are not available
+if ! python3 -c "import aubio; import numpy"; then
+  rm -rf $PLUGINDIR/bpm
+fi
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a README.md $PKG/usr/doc/$PRGNAM-$VERSION

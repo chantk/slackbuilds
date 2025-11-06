@@ -14,21 +14,19 @@ types of scientific research. It's safe, secure, and easy.
 
 Building
 
-(1) BOINC needs a static library for wxGTK3, compile with
-
-  STATIC=yes ./wxGTK3.SlackBuild
-
-(2) Edit DATADIR in the script or run
+(1) Edit DATADIR in the script or run
 
   DATADIR="/home/<user>/.boinc_data" ./boinc.SlackBuild
 
-to set the data directory in your user's home and build the package.
+to set the data directory in your user's home, or prefered data path,
+and build the package.  The default data path is /var/lib/boinc_data.
 
-(3) If you do not wish to build the boincmgr GUI,
+(2) If you do not wish to build the boincmgr GUI,
 
   BOINCMGR=no ./boinc.SlackBuild
 
-then you do not need to install the dependencies (wxGTK3).
+then you do not need to install the dependencies (wxWidgets).  See
+README.Slackware for details on headless configuration.
 
 After installation you need to join a BOINC project:
   http://boinc.berkeley.edu/projects.php
@@ -39,6 +37,6 @@ also use:
 to set up, organize, and track multiple projects.
 
 To start the BOINC GUI, run:
-   boincgui
+   boincgui.sh
 or
    boincmgr --clientdir=/usr/bin --datadir="/home/<user>/.boinc_data"

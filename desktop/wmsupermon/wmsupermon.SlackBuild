@@ -2,7 +2,7 @@
 
 # Slackware build script for wmsupermon
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -69,6 +69,10 @@ sed -i 's,~/\.wmsupermon,&rc,' README
 make FLAGS="$SLKCFLAGS"
 mkdir -p $PKG/usr/bin
 install -s -m0755 -oroot -groot $PRGNAM $PKG/usr/bin
+
+# 20230129 bkw: wrote a man page. seemed like there should be one.
+mkdir -p $PKG/usr/man/man1
+gzip -9c < $CWD/$PRGNAM.1 > $PKG/usr/man/man1/$PRGNAM.1.gz
 
 PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
 mkdir -p $PKGDOC

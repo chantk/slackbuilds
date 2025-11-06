@@ -2,7 +2,7 @@
 
 # Slackware build script for irssi_otr
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -10,6 +10,8 @@
 # irssi-otr source: it's now included in the irssi source. However,
 # Slackware's irssi package doesn't include it because Slackware
 # doesn't include libotr.
+
+# 20230711 bkw: updated for 1.4.4 (to stay in step with patches/).
 
 # 20170302 bkw: use long-format github URL
 
@@ -34,7 +36,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=irssi_otr
-VERSION=${VERSION:-1.2.3}
+VERSION=${VERSION:-1.4.4}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}

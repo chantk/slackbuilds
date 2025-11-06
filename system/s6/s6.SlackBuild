@@ -23,10 +23,12 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220301 bkw: Modified by SlackBuilds.org, BUILD=2: fix doc permissions.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=s6
-VERSION=${VERSION:-2.11.0.1}
+VERSION=${VERSION:-2.13.2.0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -39,9 +41,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -65,28 +64,21 @@ else
   LIBDIRSUFFIX=""
 fi
 
-# By default, only static libraries are built. If you need to build the shared libraries, just pass
-# BUILD_SHARED=yes to this script
+# By default, only static libraries are built. If you want to also build the
+# shared libraries, just pass BUILD_SHARED=yes to this script.
 BUILD_STATIC=${BUILD_STATIC:-yes}
 BUILD_SHARED=${BUILD_SHARED:-no}
+[ "$BUILD_STATIC" = "no" ] && LIBS_CONF="--disable-static"
+[ "$BUILD_SHARED" = "yes" ] && LIBS_CONF="--enable-shared $LIBS_CONF"
 
-if [ "$BUILD_STATIC" = "no" ]; then
-		LIBS_CONF="--disable-static"
-fi
-
-if [ "$BUILD_SHARED" = "yes" ]; then
-		LIBS_CONF="--enable-shared $LIBS_CONF"
-fi
-
-# By default, all binaries are linked against the static versions of the skarnet.org libraries
-# Pass LINK_SHARED=yes to link the binaries against the shared versions of the skarnet.org libraries
-# Also, if you only built the shared versions of the skarnet.org libraries, the binaries will be
-# linked against shared libraries automatically, as though LINK_SHARED=yes is passed to this script
+# By default, all binaries are linked against the static versions of the
+# skarnet.org libraries. Pass LINK_SHARED=yes to link the binaries against the
+# shared versions of the skarnet.org libraries. If you only built the shared
+# versions of the skarnet.org libraries, the binaries will be linked against
+# shared libraries automatically, as though LINK_SHARED=yes is passed to this
+# script.
 LINK_SHARED=${LINK_SHARED:-no}
-
-if [ "$LINK_SHARED" = "yes" ]; then
-		LIBS_CONF="--disable-allstatic $LIBS_CONF"
-fi
+[ "$LINK_SHARED" = "yes" ] && LIBS_CONF="--disable-allstatic $LIBS_CONF"
 
 set -e
 
@@ -99,9 +91,9 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
@@ -124,13 +116,13 @@ make install DESTDIR=$PKG
 mkdir $PKG/sbin
 mv $PKG/bin/s6-{set,apply}uidgid $PKG/sbin
 
-# Promote s6-svscanboot to /sbin for users that want to use s6
-# alongside Slackware's default init system
+# Promote s6-svscanboot to /sbin for users that want to use s6 alongside
+# Slackware's default init system
 install examples/s6-svscanboot $PKG/sbin
-sed -i 's|command|bin|g' $PKG/sbin/s6-svscanboot
 
+chmod -R -t examples
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a AUTHORS COPYING INSTALL NEWS README doc examples $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a AUTHORS COPYING NEWS README doc examples $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

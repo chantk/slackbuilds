@@ -3,7 +3,7 @@
 # Slackware build script for qemu
 
 # Copyright 2009, 2010  Andrew Brouwers <abrouwers@gmail.com>
-# Copyright 2013-2022  Edward W. Koenig, Vancouver, USA <kingbeowulf@linuxgalaxy.org>
+# Copyright 2013-2024  Edward W. Koenig, Vancouver, USA <kingbeowulf@linuxgalaxy.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -23,24 +23,20 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Changelog
-# Slackware-15.0 
-# 7.0   03-Feb-2022    version update and test on 15.0
-
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=qemu
-VERSION=${VERSION:-6.2.0}
-SRCVER=$(echo $VERSION | tr _ - )
+VERSION=${VERSION:-10.1.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 KVMGROUP=${KVMGROUP:-users}
-TARGETS=${TARGETS:-some}
+TARGETS=${TARGETS:-all}
 VNC_ENABLE=${VNC_ENABLE:-yes}
 AUDIODRIVERS=${AUDIODRIVERS:-pa,alsa,oss,sdl}
 BRIDGE_HELPER_SETUID=${BRIDGE_HELPER_SETUID:-no}
+SLIRP=${SLIRP:-=no}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -79,7 +75,7 @@ fi
 # Needed to build man pages if built after plain "su"
 export PATH=$PATH:/usr/share/texmf/bin
 
-# Autodetect liburing support
+# Autodetect liburing support (still needed?)
 uring="dis" ; if pkg-config --exists liburing ; then uring="en" ; fi
 
 set -e
@@ -87,25 +83,26 @@ set -e
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf $PRGNAM-$SRCVER
-tar xvf $CWD/$PRGNAM-$SRCVER.tar.xz
-cd $PRGNAM-$SRCVER
+rm -rf $PRGNAM-$VERSION
+tar xvf $CWD/$PRGNAM-$VERSION.tar.xz
+cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} + -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} + || true
 
-# Remove double CFLAGS
-sed -i "s|^\ \ CFLAGS=\"-O2\ |  CFLAGS=\"|" configure
+# Use newer meson from python3-meson-opt
+PYVER=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+export PYTHONPATH=/opt/python$PYVER/site-packages
 
 # Enable only x86* and arm emulation for qemu: if you want to build
 # all the targets available use TARGETS=all
 if [ "$TARGETS" = "all" ]; then
   targets=""
 else
-  targets="--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user,arm-softmmu,arm-linux-user,armeb-linux-user"
+  targets="--target-list=$TARGETS"
 fi
 
 # To omit VNC capability, use VNC_ENABLE=no
@@ -113,6 +110,13 @@ if [ "$VNC_ENABLE" = "yes" ]; then
   with_vnc="--enable-vnc --enable-vnc-sasl --enable-vnc-jpeg"
 else
   with_vnc="--disable-vnc"
+fi
+
+# To enable user mode networking use SLIRP=yes
+if [ "$SLIRP" = "no" ]; then
+  with_slirp="--disable-slirp"
+else
+  with_slirp="--enable-slirp"
 fi
 
 CFLAGS="$SLKCFLAGS" \
@@ -129,10 +133,12 @@ CXXFLAGS="$SLKCFLAGS" \
   --disable-debug-info \
   --enable-virtfs \
   --enable-sdl \
-  --enable-jemalloc \
+  --enable-malloc=jemalloc \
   --enable-nettle \
+  --disable-docs \
   --${uring}able-linux-io-uring \
   --audio-drv-list=${AUDIODRIVERS} \
+  $with_slirp \
   $with_vnc \
   $targets
 
@@ -175,6 +181,7 @@ cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
 
 cd $PKG
 /sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

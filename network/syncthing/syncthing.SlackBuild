@@ -3,8 +3,7 @@
 # Slackware build script for syncthing
 
 # Copyright 2015 Lionel Young, United States
-# Copyright 2016 Sebastian Arcus, United Kingdom <s.arcus@open-t.co.uk>
-# Copyright 2022 Isaac Yu <isaacyu1@isaacyu1.com>
+# Copyright 2016 Sebastian Arcus, United Kingdom
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=syncthing
-VERSION=${VERSION:-1.19.1}
+VERSION=${VERSION:-1.27.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -102,10 +101,10 @@ cat $CWD/syncthing.logrotate > $PKG/etc/logrotate.d/syncthing.new
 mkdir -p -m 750 $PKG/var/lib/syncthing/config
 mkdir -p -m 750 $PKG/var/log/syncthing
 mkdir -p -m 750 $PKG/var/run/syncthing
-chown -R syncthing.syncthing $PKG/var/{lib,run,log}/syncthing
+chown -R syncthing:syncthing $PKG/var/{lib,run,log}/syncthing
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a *.txt extra/*.pdf $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a *.txt $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

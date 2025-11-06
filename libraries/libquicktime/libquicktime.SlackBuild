@@ -22,6 +22,10 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220424 bkw: Modified by SlackBuilds.org, BUILD=4:
+# - remove empty/useless docs.
+# - i486 => i586.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=libquicktime
@@ -32,15 +36,12 @@ PKGTYPE=${PKGTYPE:-tgz}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
+    i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
        *) ARCH=$( uname -m ) ;;
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -75,21 +76,25 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
- -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+ -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
-# Fix compatibility with ffmpeg 4.x
-patch -p1 -i $CWD/libquicktime-1.2.4-ffmpeg2.patch
-patch -p1 -i $CWD/libquicktime-ffmpeg3.patch
-patch -p1 -i $CWD/libquicktime-1.2.4-ffmpeg4.patch
-
-# Fix compiling against newer faad2
-patch -p1 -i $CWD/libquicktime-1.2.4-faad2.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-CVE-2016-2399.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-CVE-2017-9122_et_al.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-faad2.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg2.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg29.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg4.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-libavutil.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg-codecs.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg5.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-qtpng.patch
+patch -p1 -i $CWD/patches/libquicktime-1.2.4-ffmpeg7.patch
 
 autoreconf -vif
 
-CFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS -std=gnu17" \
 CXXFLAGS="$SLKCFLAGS" \
 ./configure \
   --prefix=/usr \
@@ -100,6 +105,7 @@ CXXFLAGS="$SLKCFLAGS" \
   --docdir=/usr/doc/$PRGNAM-$VERSION \
   --enable-gpl \
   --with-libdv \
+  --with-ffmpeg \
   --build=$ARCH-slackware-linux
 
 make
@@ -113,7 +119,7 @@ find $PKG/usr/man -type f -exec gzip -9 {} \;
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS ChangeLog COPYING INSTALL NEWS README TODO \
+  ChangeLog COPYING README TODO \
     $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

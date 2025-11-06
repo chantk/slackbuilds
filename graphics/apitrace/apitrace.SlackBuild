@@ -22,13 +22,17 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220301 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - fix conflict with dpkg.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=apitrace
-VERSION=${VERSION:-9.0}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-11.1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
+LIBBACKTRACE_COMMIT=${LIBBACKTRACE_COMMIT:-9ae4f4ae4481b1e69d38ed810980d33103544613}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -38,9 +42,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -75,9 +76,25 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
+
+# 20220408 bkw: fix Debian brokenness: we have a dpkg build... if it
+# happens to be installed, we get shared libs installed to the wrong
+# directory (because we don't really support debian-style multiarch).
+sed -i 's,dpkg-architecture,true,' CMakeLists.txt
+
+# 20230920 bcs: Patch to allow building without googletest, and to
+# allow use of system packages for most dependencies. libbacktrace
+# is the only one that doesn't already have a SlackBuild script.
+patch -p1 < $CWD/apitrace-11-thirdparty.patch
+(
+  cd thirdparty
+  rm -rf libbacktrace
+  tar -xf $CWD/libbacktrace-$LIBBACKTRACE_COMMIT.tar.gz
+  mv libbacktrace-$LIBBACKTRACE_COMMIT libbacktrace
+)
 
 mkdir -p build
 cd build
@@ -88,13 +105,12 @@ cd build
     -DDOC_INSTALL_DIR=doc/$PRGNAM-$VERSION \
     -DLIB_SUFFIX=${LIBDIRSUFFIX} \
     -DENABLE_STATIC_SNAPPY=OFF \
+    -DBUILD_TESTING=no \
+    -DDEFAULT_APITRACE_VERSION=${VERSION} \
     -DCMAKE_BUILD_TYPE=Release ..
   make
-  make install DESTDIR=$PKG
+  make install/strip DESTDIR=$PKG
 cd ..
-
-find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" |
-  grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild

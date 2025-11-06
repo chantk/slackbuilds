@@ -2,7 +2,7 @@
 
 # Slackware build script for zotero
 
-# Copyright 2018-2020 Andrew Payne phalange@komputermatrix.com
+# Copyright 2018-2025 Andrew Payne phalange@komputermatrix.com
 # Copyright 2014-2018 Petar Petrov slackalaxy@gmail.com
 # All rights reserved.
 #
@@ -27,7 +27,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=zotero
 SRCNAM=Zotero
-VERSION=${VERSION:-5.0.85}
+VERSION=${VERSION:-7.0.27}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,8 +40,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
 # could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
@@ -76,15 +74,23 @@ mkdir -p $PKG/{usr/bin,opt/$PRGNAM}
   cp -a * $PKG/opt/$PRGNAM
   ln -s /opt/$PRGNAM/zotero $PKG/usr/bin/$PRGNAM
 
+# put the icons in the right place
+mkdir -p $PKG/usr/share/icons/hicolor/{128x128,32x32,64x64}/apps
+cp $PKG/opt/$PRGNAM/icons/icon128.png \
+   $PKG/usr/share/icons/hicolor/128x128/apps/zotero.png
+cp $PKG/opt/$PRGNAM/icons/icon32.png \
+   $PKG/usr/share/icons/hicolor/32x32/apps/zotero.png
+cp $PKG/opt/$PRGNAM/icons/icon64.png \
+   $PKG/usr/share/icons/hicolor/64x64/apps/zotero.png
+  
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
-mkdir -p $PKG/usr/share/{applications,pixmaps}
-cp $CWD/$PRGNAM.desktop $PKG/usr/share/applications
-cp $CWD/$PRGNAM.png $PKG/usr/share/pixmaps/$PRGNAM.png
+mkdir -p $PKG/usr/share/applications
+cat $CWD/$PRGNAM.desktop > $PKG/usr/share/applications/$PRGNAM.desktop
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

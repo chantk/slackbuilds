@@ -2,16 +2,26 @@
 
 # Slackware build script for clksignal
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20230716 bkw: updated for v20230515, expand man page a bit.
+# 20230530 bkw: remove unused flags.
+
+# 20230114 bkw: updated for v20221125.
+# - fix my typo that prevented the qt5 UI from being built.
+# - rename ROM dir AppleIIGS => AppleIIgs (the latter is hardcoded
+#   in the emulator binary).
+# - make PRINT_PACKAGE_NAME work.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=clksignal
-VERSION=${VERSION:-20211219}
+VERSION=${VERSION:-20230515}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
+PKGTYPE=${PKGTYPE:-tgz}
 
 SRCNAM=CLK
 SRCVER="$( echo $VERSION | sed 's,^\(....\)\(..\)\(..\),\1\-\2-\3,' )"
@@ -33,20 +43,6 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i586" ]; then
-  SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "i686" ]; then
-  SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "x86_64" ]; then
-  SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
-else
-  SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
-fi
-
 set -e
 
 rm -rf $PKG
@@ -59,10 +55,14 @@ chown -R root:root .
 find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
         \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
 
+# 20230716 bkw: upstream removed some C++ source files without removing them
+# from the qt5 .pro file. fixed after 20230515 release.
+[ "$VERSION" = "20230515" ] && patch -p1 < $CWD/9342c60.diff
+
 mkdir -p $PKG/usr/games $PKG/usr/man/man6 $PKG/usr/share/applications
 
 # Qt5 user interface is optional.
-if [ "{QT:-yes}" = "yes" ]; then
+if [ "${QT:-yes}" = "yes" ]; then
   cd OSBindings/Qt
   qmake-qt5
   make
@@ -83,8 +83,10 @@ THLINE=".TH $PRGNAM 6 \\\"$SRCVER\\\" \\\"$VERSION\\\" \\\"SlackBuilds.org\\\""
 sed '/^\.TH/s,.*,'"$THLINE"',' Packaging/templates/$PRGNAM.1.j2 | \
   gzip -9c > $PKG/usr/man/man6/$PRGNAM.6.gz
 
-# there actually are a few ROMs in here, plus lots of readme.txt
+# there actually are a few ROMs in here, plus lots of readme.txt.
+# one dir has the wrong capitalization.
 mkdir -p $PKG/usr/share/$SRCNAM
+mv ROMImages/AppleIIGS ROMImages/AppleIIgs
 cp -a ROMImages/* $PKG/usr/share/$SRCNAM
 
 MACICONS="OSBindings/Mac/Clock Signal/Assets.xcassets/AppIcon.appiconset/"
@@ -120,4 +122,4 @@ cat $CWD/slack-desc > $PKG/install/slack-desc
 cat $CWD/doinst.sh > $PKG/install/doinst.sh
 
 cd $PKG
-/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

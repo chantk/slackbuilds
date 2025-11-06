@@ -2,7 +2,8 @@
 
 # Slackware build script for fvwm3
 
-# Copyright 2020-2021, Alexander Verbovetsky, Moscow, Russia
+# Copyright 2020-2024, Alexander Verbovetsky, Moscow, Russia
+# Copyright 2024-2025, K. Eugene Carlson, Tsukuba, Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=fvwm3
-VERSION=${VERSION:-1.0.4}
+VERSION=${VERSION:-1.1.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -38,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -73,7 +71,28 @@ rm -rf $PRGNAM-$VERSION
 tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
 cd $PRGNAM-$VERSION
 
-patch -p1 < $CWD/cmd_geometrywindow-move_null_check.patch
+# rename perl libraries to avoid collisions with the stock fvwm
+# borrowed from ALT Linux
+# https://git.altlinux.org/gears/f/fvwm3.git?a=blob_plain;f=0001-rename-perl-fvwm.patch
+#
+# KEC: Replaced previous to accommodate meson (2024-12-01)
+# KEC: Autotools removed (2025-06-03)
+zcat $CWD/renames.patch.gz | patch -p0
+# fix references to renamed man pages and binaries
+zcat $CWD/config-renames.patch.gz | patch -p0
+
+mv perllib/FVWM perllib/FVWM3
+mv perllib/General perllib/FVWM3General
+
+(
+cd doc
+for adoc in $(find . -type f -name "*Fvwm*") ; do
+  mv $adoc $(echo $adoc | sed -e 's|Fvwm|Fvwm3|')
+done
+for adoc in $(find . -type f -name "*fvwm-*") ; do
+  mv $adoc $(echo $adoc | sed -e 's|fvwm|fvwm3|')
+done
+)
 
 chown -R root:root .
 find -L . \
@@ -82,24 +101,30 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+PYVER=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+export PYTHONPATH=/opt/python$PYVER/site-packages
+
+mkdir build
+(
+cd build
+
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
-./configure \
+meson setup \
   --prefix=/usr \
   --libdir=/usr/lib${LIBDIRSUFFIX} \
   --sysconfdir=/etc \
   --localstatedir=/var \
   --mandir=/usr/man \
-  --enable-mandoc \
-  --docdir=/usr/doc/$PRGNAM-$VERSION \
-  --enable-golang \
-  --program-prefix= \
-  --program-suffix= \
-  --program-transform-name='/vwm[^3]/ s/vwm/vwm3/' \
-  --build=$ARCH-slackware-linux
+  --buildtype=release \
+  -Ddocdir=/usr/doc/$PRGNAM-$VERSION \
+  -Dmandoc=true
 
-make
-make install DESTDIR=$PKG
+"${NINJA:=ninja}"
+DESTDIR=$PKG $NINJA install
+)
+
+rm -f $PKG/{,usr/}lib${LIBDIRSUFFIX}/*.la
 
 zcat $CWD/startfvwm3.gz > $PKG/usr/bin/startfvwm3
 chmod 755 $PKG/usr/bin/startfvwm3
@@ -115,7 +140,7 @@ find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a NEWS $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a CHANGELOG.md COPYING README.md $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

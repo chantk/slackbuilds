@@ -2,7 +2,7 @@
 
 # Slackware build script for clksignal-roms
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -11,12 +11,21 @@
 # download links will likely break. Let me know if this happens.
 
 # To clean up the directory:
-# rm -f *.rom *.ROM *.zip basic chargen kernal dos154*
+# rm -f *.rom *.ROM *.img *.zip *.chr basic chargen kernal dos154*
+
+# 20230716 bkw:
+# - clksignal 20230515's clksignal-qt now looks in a different dir for ROMS;
+#   include a symlink in the package.
+
+# 20230114 bkw:
+# - add apple2gs.chr
+# - add tos104uk.img
+# - update STATUS.txt
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=clksignal-roms
-VERSION=${VERSION:-20220121}
+VERSION=${VERSION:-20230716}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -95,8 +104,9 @@ unzip "$Z"
 # Doesn't really matter: clksignal segfaults on trying to start up
 # with --new=appleiigs.
 cat 341-0737 341-0748 > rom03
-install_rom rom03 $DEST/apple2gs.rom
+install_rom rom03 $DEST/apple2gs.rom2
 install_rom 341s0632-2.bin $DEST/341s0632-2
+install_rom apple2gs.chr $DEST/apple2gs.chr
 
 ###### Commodore VIC-20 and 1540/1541 ROMs
 # only English and PAL for now.
@@ -114,6 +124,8 @@ install_rom $CWD/dos1541 $DEST/1541.bin
 set_dest AtariST
 unzip $CWD/tos100uk.zip
 install_rom tos100uk.img $DEST/tos100.img
+unzip $CWD/tos104uk.zip
+install_rom tos104uk.img $DEST/tos104.img
 
 ###### Colecovision
 set_dest ColecoVision
@@ -202,6 +214,10 @@ unzip $CWD/zx80.zip zx80.rom
 unzip $CWD/zx81.zip zx81a.rom
 install_rom zx80.rom $DEST/zx80.rom
 install_rom zx81a.rom $DEST/zx81.rom
+
+# 20230716 bkw: newer clksignal-qt requires this:
+mkdir -p $PKG/usr/share/clksignal-qt
+ln -s ../CLK $PKG/usr/share/clksignal-qt/ROMImages
 
 # No docs, include our own.
 PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION

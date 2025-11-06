@@ -3,7 +3,7 @@
 # Slackware build script for thermald
 
 # Copyright 2017 Aaditya Bagga <aaditya_gnulinux@zoho.com>
-# Copyright 2017-2022 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
+# Copyright 2017-2025 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,7 +27,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=thermald
 SRCNAM=thermal_daemon
-VERSION=${VERSION:-2.4.8}
+VERSION=${VERSION:-2.5.10}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,9 +40,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -82,6 +79,7 @@ find -L . \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
 patch -p1 < $CWD/thd.patch
+patch -p1 < $CWD/time_t_compile.diff
 
 ./autogen.sh
 ./configure \
@@ -91,6 +89,7 @@ patch -p1 < $CWD/thd.patch
   --localstatedir=/var \
   --mandir=/usr/man \
   --docdir=/usr/doc/$PRGNAM-$VERSION \
+  --without-systemdsystemunitdir \
   --build=$ARCH-slackware-linux
 
 make

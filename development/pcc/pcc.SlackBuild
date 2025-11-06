@@ -3,9 +3,11 @@
 # Slackware build script for pcc (Portable C Compiler)
 
 # Originally written by Armin Besirovic <email removed>
-# Modified by B. Watson <yalhcru@gmail.com>
+# Modified by B. Watson <urchlay@slackware.uk>
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20230108 bkw: updated for 1.2.0.DEVEL+20230108.
 
 # 20210906 bkw:
 # - updated for 1.2.0.DEVEL+20210905. Putting the .DEVEL in VERSION
@@ -46,7 +48,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=pcc
-VERSION=${VERSION:-1.2.0.DEVEL+20210905}
+VERSION=${VERSION:-1.2.0.DEVEL+20230108}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}

@@ -6,6 +6,7 @@
 # Took some ideas/parts from an older apvlv SlackBuild form Eugene Wissner:
 
 # Copyright 2010 Eugene Wissner <belka.ew@gmail.com>
+# Copyright 2024 Isaac Yu <isaacyu@protonmail.com>
 # All rights reserved.
 #
 # Permission to use, copy, modify, and distribute this software for any purpose
@@ -23,15 +24,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220402 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - add update-desktop-database to doinst.sh.
 # 20220217 bkw: Modified by SlackBuilds.org: fix build on Slack 15.0.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=apvlv
-VERSION=${VERSION:-20160627_9ab7626}
+VERSION=${VERSION:-0.6.0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
+
+SRCVER=$VERSION-final
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -69,9 +74,9 @@ set -e
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.xz
-cd $PRGNAM-$VERSION
+rm -rf $PRGNAM-$SRCVER
+tar xvf $CWD/$PRGNAM-$SRCVER.tar.gz
+cd $PRGNAM-$SRCVER
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
@@ -79,31 +84,32 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
-# 20220217 bkw: poppler API change... this include no longer exists, and
-# it turns out it was redundant anyway.
-sed -i '/#include *<goo\/gtypes/d' src/ApvlvPdf.cc
+# Fix man directory
+sed -i "s,apvlv\.1 TYPE MAN,apvlv\.1 DESTINATION \${CMAKE_INSTALL_PREFIX}/man/man1," CMakeLists.txt
+
+# Use the tarball's Startup.pdf
+patch -p1 < $CWD/use_dist_manpdf.patch
 
 mkdir -p build
 cd build
   cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="$SLKCFLAGS -fpermissive" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$SLKCFLAGS" \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DAPVLV_WITH_UMD=false \
-    -DMANDIR=/usr/man \
+    -DAPVLV_WITH_DJVU=yes \
     -DDOCDIR=/usr/doc/$PRGNAM-$VERSION
   make VERBOSE=1
   make install/strip DESTDIR=$PKG
 cd ..
 
-gzip -9 $PKG/usr/man/man*/*
+gzip -9 $PKG/usr/man/man1/apvlv.1
 
 mv $PKG/etc/apvlvrc $PKG/etc/apvlvrc.new
 
 # Leave the icons in docdir - that path is hardcoded in apvlv binary
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS COPYING NEWS README THANKS TODO apvlvrc.example \
+  AUTHORS COPYING NEWS README.md THANKS TODO Startup.pdf apvlvrc.example \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

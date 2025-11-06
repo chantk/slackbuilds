@@ -2,8 +2,9 @@
 
 # Slackware build script for Lazarus IDE
 
-# Written by Andre Barboza <email removed>
-# Now maintained by B. Watson <yalhcru@gmail.com>
+# 2023-2025 Maintained by Antonio Leal <antonioleal@yahoo.com>
+# 2021-2022 Maintained by B. Watson <urchlay@slackware.uk>
+# Originally written by Andre Barboza <email removed>
 
 # Redistribution and use of this script, with or without modification, is
 # permitted provided that the following conditions are met:
@@ -22,6 +23,17 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20231229 ALe: Upgrade to Lazarus 3.0
+# - moved fpc-source to fpc package (with new option for the user to exclude it).
+# - added option to build lazarus with qt5 instead of gtk2.
+# - commented lhelp link correction as sbopkglint does not complain anymore.
+
+# 20220414 bkw: BUILD=2
+# - fix PRINT_PACKAGE_NAME when ARCH not set in environment.
+# - add gtk-update-icon-cache to doinst.sh.
+# - remove empty files from doc dir.
+# - fix broken symlink.
+
 # 20210905 bkw:
 # - take over maintenance
 # - update for v2.0.12
@@ -30,13 +42,20 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=lazarus
-VERSION=${VERSION:-2.0.12}
+VERSION=${VERSION:-4.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
-FPCVER=${FPCVER:-3.2.2}
 LCL=${LCL:-gtk2}
+OPT=${OPT:--v000}
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i586 ;;
+    *) ARCH=$( uname -m ) ;;
+   esac
+fi
 
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
@@ -46,13 +65,6 @@ fi
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
-
-if [ -z "$ARCH" ]; then
-  case "$( uname -m )" in
-    i?86) ARCH=i586 ;;
-    *) ARCH=$( uname -m ) ;;
-   esac
-fi
 
 if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "i586" ] && [ "$ARCH" != "i686" ]; then
   printf "\nThis won't build on $ARCH.\n\n"
@@ -68,19 +80,23 @@ fixperms() {
          \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
 }
 
+# extract source tarball
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM
-tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
+tar xvf $CWD/$PRGNAM-$VERSION-0.tar.gz
 cd $PRGNAM
+
+# fix permssions
 fixperms
 
+# patch things up
 sed -i -e 's:share/man:man:' install/man/Makefile
 
 # Compilation doesn't need ./configure
 make clean
-make -j1 all \
+make -j1 bigide \
   PREFIX=/usr \
   LCL_PLATFORM=${LCL} \
   OPT=${OPT}
@@ -94,7 +110,12 @@ make install \
   ln -sf ../share/lazarus/lazbuild
   ln -sf ../share/lazarus/startlazarus
 )
+# add link to lazarus-ide man page
+( cd $PKG/usr/man/man1
+  ln -sf lazarus-ide.1.gz lazarus.1.gz
+)
 
+# strip binaries and libraries
 find $PKG -print0 -type f -a -perm /111 | \
      xargs -0 file -m /etc/file/magic/elf | \
      grep -e "executable" -e "shared object" | \
@@ -102,25 +123,28 @@ find $PKG -print0 -type f -a -perm /111 | \
      cut -f 1 -d : | \
      xargs strip --strip-unneeded 2> /dev/null || true
 
-# 20210905 bkw: Nothing used fpc-source but lazarus, so just include
-# the source here.
-mkdir -p $PKG/usr/src
-( cd $PKG/usr/src
-  tar xvf $CWD/fpc-$FPCVER.source.tar.gz
-  fixperms
-  ln -s fpc-$FPCVER fpc
-)
-
-# Install desktop file, icon, and mime entry
+# install desktop file, icon, and mime entry
 mkdir -p $PKG/usr/share/{applications,pixmaps,mime/packages}
 cat install/lazarus.desktop > $PKG/usr/share/applications/lazarus.desktop
 cat images/ide_icon48x48.png > $PKG/usr/share/pixmaps/lazarus.png
 cat install/lazarus-mime.xml > $PKG/usr/share/mime/packages/lazarus-mime.xml
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -ra COPYING* README.txt docs/* examples/ $PKG/usr/doc/$PRGNAM-$VERSION
-cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+# copy documentation and examples
+PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKGDOC
+cp -ra COPYING* README.md docs/* examples/ $PKGDOC
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
+rm -f $PKGDOC/INSTALL.txt
+find $PKGDOC -depth -type d -empty -delete
+
+# 20220414 bkw: this symlink is mistargeted... fixed, and don't freak out
+# if sbopkglint complains about a filesystem loop (there really is one).
+# 20231229 ALe: sbopkglint does not complain anymore
+#rm -f $PKG/usr/share/lazarus/components/chmhelp/lhelp/lhelp.app/Contents/MacOS/lhelp
+#ln -s ../../../../lhelp $PKG/usr/share/lazarus/components/chmhelp/lhelp/lhelp.app/Contents/MacOS/lhelp
+
+# build package
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
 cat $CWD/doinst.sh > $PKG/install/doinst.sh

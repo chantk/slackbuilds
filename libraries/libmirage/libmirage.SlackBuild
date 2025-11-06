@@ -4,7 +4,8 @@
 #
 # Copyright 2008 Niklas "Nille" Åkerström
 # Copyright 2010-2013 Niels Horn, Rio de Janeiro, RJ, Brazil <niels.horn@gmail.com>
-# Copyright 2018-2022 Isaac Yu <isaacyu1@isaacyu1.com>
+# Copyright 2018-2024 Isaac Yu <isaacyu@protonmail.com>
+# Copyright 2025 S. S. Bolokanar <bolokanar@bulgarsociety.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,7 +28,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=libmirage
-VERSION=${VERSION:-3.2.6}
+VERSION=${VERSION:-3.2.10}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,9 +41,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -96,7 +94,7 @@ find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | gr
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp AUTHORS ChangeLog COPYING INSTALL README $PKG/usr/doc/$PRGNAM-$VERSION
+cp AUTHORS ChangeLog COPYING README $PKG/usr/doc/$PRGNAM-$VERSION
 ln -sf ../../share/gtk-doc/html/$PRGNAM \
   $PKG/usr/doc/$PRGNAM-$VERSION/html
 

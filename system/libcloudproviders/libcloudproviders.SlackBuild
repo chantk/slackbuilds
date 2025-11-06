@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 # Slackware build script for libcloudproviders
 
 # Copyright 2022 Isaac Yu <isaacyu1@isaacyu1.com>
 # All rights reserved.
+#
+# 2023 - Updated and Maintained by Bob Funk, Winnipeg, Canada
 #
 # Redistribution and use of this script, with or without modification, is
 # permitted provided that the following conditions are met:
@@ -38,9 +40,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -90,6 +89,9 @@ cd build
   "${NINJA:=ninja}"
   DESTDIR=$PKG $NINJA install
 cd ..
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a CHANGELOG LICENSE README.md $PKG/usr/doc/$PRGNAM-$VERSION

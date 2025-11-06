@@ -6,7 +6,7 @@
 # customary to leave one space after the ':' except on otherwise blank lines.
 
              |-----handy-ruler------------------------------------------------------|
-python3-gmpy2: python3-gmpy2 (multi-precision arithmetic for python 3)
+python3-gmpy2: python3-gmpy2 (multi-precision arithmetic for python)
 python3-gmpy2:
 python3-gmpy2: gmpy2 is an optimized, c-coded python extension module that supports
 python3-gmpy2: fast multiple-precision arithmetic. gmpy2 is based on the original

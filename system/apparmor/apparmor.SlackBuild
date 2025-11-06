@@ -25,8 +25,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=apparmor
-VERSION=${VERSION:-2.13.4}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-4.1.2}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -38,9 +38,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -57,7 +54,7 @@ elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
   LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
-  SLKCFLAGS="-O2 -fPIC"
+  SLKCFLAGS="-O2 -fPIC -Wl,-z,relro,-z,now -fstack-protector-all -fstack-clash-protection -fcf-protection=full -D_FORTIFY_SOURCE=2 -D_GLIBCXX_ASSERTIONS"
   LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
@@ -113,7 +110,6 @@ make
 make install DESTDIR=$PKG MANDIR=/usr/man
 popd
 mv -v ${PKG}/etc/apparmor/parser.conf    ${PKG}/etc/apparmor/parser.conf.new
-mv -v ${PKG}/etc/apparmor/subdomain.conf ${PKG}/etc/apparmor/subdomain.conf.new
 mv -v ${PKG}/etc/rc.d/rc.apparmor        ${PKG}/etc/rc.d/rc.apparmor.new
 
 pushd utils

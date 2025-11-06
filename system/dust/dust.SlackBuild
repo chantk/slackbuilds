@@ -3,7 +3,7 @@
 # Slackware build script for dust
 
 # Copyright 2019-2021 Benjamin Trigona-Harany <slackbuilds@jaxartes.net>
-# Copyright 2021 Erich Ritz, Jenks, Oklahoma, USA
+# Copyright 2021-2025 Erich Ritz, Jenks, Oklahoma, USA
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=dust
-VERSION=${VERSION:-0.7.5}
+VERSION=${VERSION:-1.2.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -45,9 +45,6 @@ if [ -z "$ARCH" ]; then
   fi
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -144,7 +141,7 @@ mkdir vendor
       printf '    "package": "%s"'  "$cksum"
 
       printf "}\n"
-    } | python -c "import sys, json; data = sys.stdin.read(); print json.dumps(json.loads(data), sort_keys=True, indent=4, separators=(',', ' : '))" > $dep-$ver/.cargo-checksum.json
+    } | python3 -c "import sys, json; data = sys.stdin.read(); print (json.dumps(json.loads(data), sort_keys=True, indent=4, separators=(',', ' : ')))" > $dep-$ver/.cargo-checksum.json
   done
 )
 
@@ -155,6 +152,13 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+export PATH="/opt/rust/bin:$PATH"
+if [ -z "$LD_LIBRARY_PATH" ]; then
+  export LD_LIBRARY_PATH="/opt/rust/lib$LIBDIRSUFFIX"
+else
+  export LD_LIBRARY_PATH="/opt/rust/lib$LIBDIRSUFFIX:$LD_LIBRARY_PATH"
+fi
+
 CARGO_HOME=.cargo \
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
@@ -164,12 +168,20 @@ mkdir -p $PKG/usr/bin/
 
 find target -name $PRGNAM -exec install -m 755 {} $PKG/usr/bin/$PRGNAM \;
 
-find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
-  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+mkdir -p $PKG/usr/share/bash-completion/completions
+mv completions/dust.bash $PKG/usr/share/bash-completion/completions/dust
+mkdir -p $PKG/usr/share/zsh/site-functions
+mv completions/_dust $PKG/usr/share/zsh/site-functions/
+mkdir -p $PKG/usr/share/fish/vendor_completions.d
+mv completions/dust.fish $PKG/usr/share/fish/vendor_completions.d/
+
+mkdir -p $PKG/usr/man/man1
+mv man-page/dust.1 $PKG/usr/man/man1/
+find $PKG/usr/man -type f -exec gzip -9 {} \;
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a -r \
-  LICENSE README.md \
+cp -a \
+  LICENSE README.md config completions \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

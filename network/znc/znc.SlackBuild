@@ -3,7 +3,7 @@
 # Slackware build script for ZNC
 
 # Copyright 2007-2013  Sean Donner (sean.donner@gmail.com)
-# Copyright 2017, 2018, 2020  Mario Preksavec, Zagreb, Croatia
+# Copyright 2017, 2024  Mario Preksavec, Zagreb, Croatia
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,8 +26,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=znc
-VERSION=${VERSION:-1.7.5}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-1.9.1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -42,7 +42,7 @@ WITH_TCL=${WITH_TCL:-no}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
+    i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
        *) ARCH=$( uname -m ) ;;
   esac
@@ -60,8 +60,8 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i486" ]; then
-   SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+if [ "$ARCH" = "i586" ]; then
+   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
    LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
    SLKCFLAGS="-O2 -march=i686 -mtune=i686"
@@ -146,7 +146,6 @@ CXXFLAGS="$SLKCFLAGS" \
   --sysconfdir=/etc \
   --localstatedir=/var \
   --mandir=/usr/man \
-  --build=$ARCH-slackware-linux \
   $do_openssl \
   $do_ipv6 \
   $do_perl \
@@ -160,6 +159,9 @@ make install DESTDIR=$PKG
 
 find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+find $PKG/usr/man -type f -exec gzip -9 {} \;
+for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
 # Change the ownership of the configuration directory
 mkdir -p $PKG/etc/znc

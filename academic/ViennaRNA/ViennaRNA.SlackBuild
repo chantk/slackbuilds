@@ -2,7 +2,7 @@
 
 # Slackware build script for ViennaRNA
 
-# Copyright 2018-2021 Rob van Nues
+# Copyright 2018-2023 Rob van Nues
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,10 +25,16 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=ViennaRNA
-VERSION=${VERSION:-2.5.0}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-2.7.0}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
+
+# RNAxplorer requires lapacke (which requires lapack that requires blas)
+# but cannot see what blas is used for compiling lapack
+# please adjust $BLAS to the blas installed on your system
+BLAS=${BLAS:-openblas}
+
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -38,9 +44,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -79,6 +82,7 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+
 # You can configure some ViennaRNA features that are (not) compiled by default.
 # See the README.md for details. You can enable/disable a these features by
 # passing variables to the script (VAR=yes/no ./ViennaRNA.SlackBuild).
@@ -92,8 +96,7 @@ find -L . \
 # - RNAlocmin
 # - Swig (all scripting interfaces)
 # - Perl interface
-# - Python interface
-# - Python 3 interface
+# - Python 3 interface (= Python interface)
 # - Streaming SIMD Extension support
 # in the case of run time/ make/ or configure problems try turning off:
 # - Link Time Optimization (LTO)
@@ -104,12 +107,12 @@ find -L . \
 # for Z-score filtering via statically linked libsvm:
 # - SVM Z-score filter in RNALfold
 # - GNU Scientific Library for RNApvmin
-
+# everything is enabled here
 cluster=""       ; [ "${CLUSTER:-yes}" != "no" ]        && cluster="--with-cluster"
 kinwalker=""     ; [ "${KINWALKER:-yes}" != "no" ]      && kinwalker="--with-kinwalker"
 # Default enabled features:
 forester=""      ; [ "${FORESTER:-yes}" != "no" ]       && forester="--with-forester"
-kinfold=""       ; [ "${KINFOLD:-yes}" != "no" ]        && kinwalk="--with-kinfold"
+kinfold=""       ; [ "${KINFOLD:-yes}" != "no" ]        && kinfold="--with-kinfold"
 rnalocmin=""     ; [ "${RNALOCMIN:-yes}" != "no" ]      && rnalocmin="--with-rnalocmin"
 perl=""          ; [ "${PERL:-yes}" != "no" ]           && perl="--with-perl"
 # python = python3
@@ -131,11 +134,9 @@ CXXFLAGS="$SLKCFLAGS" \
   --mandir=/usr/man \
   --docdir=/usr/doc/$PRGNAM-$VERSION \
   --build=$ARCH-slackware-linux \
+  --with-blas=$BLAS \
   --with-python2=no \
   --with-doc=no \
-  $cluster \
-  $kinwalker \
-  $forester \
   $cluster \
   $kinwalker \
   $forester \
@@ -170,11 +171,13 @@ for perlscript in $PKG/usr/share/ViennaRNA/bin/*.pl ; do
 done
 rm -r $PKG/usr/share/ViennaRNA/bin
 
-# no need for that file it is outdated anyway
+# re-organise info files the Slackware/SBo way
+mkdir $PKG/usr/info/
 rm $PKG/usr/share/info/dir
-
-#gzip info file
-gzip -9 $PKG/usr/share/info/*.info
+#gzip and move info file
+gzip -9 $PKG/usr/share/info/*.info*
+mv $PKG/usr/share/info/*.info* $PKG/usr/info/
+rmdir $PKG/usr/share/info
 
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
@@ -196,7 +199,7 @@ if [[ -e $PKG/usr/doc/$PRGNAM-$VERSION/RNAlib-$VERSION.pdf ]]; then
 fi
 
 cp -a \
-  NEWS README.md AUTHORS COPYING THANKS INSTALL CHANGELOG.md license.txt \
+  NEWS README.md AUTHORS COPYING THANKS CHANGELOG.md license.txt \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
@@ -204,6 +207,8 @@ rm -f $PKG/usr/lib*/*.la
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
+cat $CWD/douninst.sh > $PKG/install/douninst.sh
 
 cd $PKG
 /sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

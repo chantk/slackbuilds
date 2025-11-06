@@ -28,7 +28,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=motion
-VERSION=${VERSION:-4.3.1}
+VERSION=${VERSION:-4.6.0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -62,7 +62,7 @@ elif [ "$ARCH" = "x86_64" ]; then
 fi
 
 # Check ffmpeg existence
-ff=`pkg-config --exists libavfilter`
+ff=$( pkg-config --exists libavfilter )
 if [ $? -eq 0 ]; then
   ffmpeg=""
 else
@@ -85,6 +85,7 @@ find -L . \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
 autoreconf -fiv
+LIBS="-lwebp" \
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
 ./configure \

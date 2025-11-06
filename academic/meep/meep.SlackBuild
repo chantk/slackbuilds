@@ -25,7 +25,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=meep
-VERSION=${VERSION:-1.17.1}
+VERSION=${VERSION:-1.25.0}
 BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -64,12 +64,12 @@ else
   LIBDIRSUFFIX=""
 fi
 
+set -e 
+
 # change annoying underscores into hyphens
 SVERSION=$(echo $VERSION | tr '_' '-')
 # make a custom list of doc files in advance
 DOCFILES="AUTHORS COPYRIGHT LICENSE TODO NEWS.md"
-
-set -e
 
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
@@ -77,6 +77,10 @@ cd $TMP
 rm -rf $PRGNAM-$SVERSION
 tar xvf $CWD/$PRGNAM-$SVERSION.tar.gz
 cd $PRGNAM-$SVERSION
+# patch 32bit build - thanks debian devs
+case "$ARCH" in
+  i?86) zcat $CWD/i386-fix.patch.gz | patch -p1 ;;
+esac
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
@@ -112,6 +116,7 @@ fi
 
 CFLAGS="$SLKCFLAGS" \
 CPPFLAGS="$SLKCFLAGS" \
+PYTHON=/usr/bin/python3 \
 ./configure \
   --prefix=/usr \
   --mandir=/usr/man \

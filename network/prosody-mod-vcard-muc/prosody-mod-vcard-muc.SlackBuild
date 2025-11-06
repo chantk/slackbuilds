@@ -2,7 +2,8 @@
 
 # Slackware build script for prosody-mod-vcard-muc
 
-# Copyright 2019 Andrew Clemons, Wellington, New Zealand
+# Copyright 2019-2022 Andrew Clemons, Wellington, New Zealand
+# Copyright 2023 Andrew Clemons, Tokyo, Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,8 +27,8 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=prosody-mod-vcard-muc
 MDLNAM=$(echo $PRGNAM | sed 's/prosody-//' | tr '-' '_')
-VERSION=${VERSION:-hg4879}
-REVISION=${REVISION:-883d45d2082a}
+VERSION=${VERSION:-hg6013}
+REVISION=${REVISION:-f301d777ee49}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -82,7 +83,7 @@ cp -a $MDLNAM $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 mv \
-  $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/$MDLNAM/README.markdown \
+  $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/$MDLNAM/README.md \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

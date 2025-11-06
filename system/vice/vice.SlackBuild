@@ -3,9 +3,35 @@
 # Slackware build script for vice
 
 # Copyright 2008 Mauro Giachero (email removed)
-# Copyright 2020, 2021 B. Watson (yalhcru@gmail.com)
+# Copyright 2020, 2021, 2022, 2023 B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20250509 bkw: BUILD=2, install the SDL keymaps.
+# 20250122 bkw: update for v3.9.
+
+# 20240213 bkw: update for v3.8.
+# - had to add --disable-parsid to the configure command. it was breaking
+#   the build. also, do you really have a SID chip connected to your
+#   parallel port? (do you even *have* a parallel port?)... if so, either
+#   send me a patch, or wait until upstream does another release.
+# - LAME is no longer supported, remove --enable-lame.
+# - add --enable-catweasel.
+
+# 20230504 bkw: BUILD=2.
+# - fix vice.texi so the GNU info file gets generated.
+# - remove old ./configure arguments and fix a couple of wrong ones.
+#   thanks to Franzen for sending a patch to fix this.
+# - changed -Wl,--allow-multiple-definition to -fcommon, which does
+#   basically the same thing but matches how other builds do it.
+# - fix doinst.sh silliness.
+# - add douninst.sh, to clean up /usr/info/dir after the package is removed.
+
+# 20221228 bkw: update for v3.7.1.
+
+# 20221129 bkw: update for v3.6.1.
+# - can't build our own HTML or plaintext docs from vice.texi.
+# - include upstream's HTML docs in package.
 
 # 20210809 bkw: update for v3.5, many changes, can't build old versions.
 # - Relicense as WTFPL, with permission from the original author.
@@ -37,8 +63,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=vice
-VERSION=${VERSION:-3.5}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-3.9}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -80,9 +106,11 @@ set -e
 
 # ffmpeg is included in the base OS on post-14.2 -current, but leave
 # this here in case someone's doing something clever.
-[ -x /usr/bin/ffmpeg ] && ffmpeg="--enable-external-ffmpeg"
+[ -x /usr/bin/ffmpeg ] && ffmpeg="--enable-ffmpeg"
 
 # Anticipating 15.0's pure-alsa-system
+# 20240214 bkw: which sadly never materialized. I keep this here for
+# my own use, anyway.
 if [ "${PULSE:-yes}" != "yes" ]; then
   pulseopt="--without-pulse"
 fi
@@ -94,15 +122,20 @@ mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
 
-# Fancy tar command here, avoid extracting what we don't need.
-tar xvf $CWD/$PRGNAM-$VERSION.tar.?z \
-    --wildcards \
-    --exclude='*/src/lib/lib*'
+tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
 
 cd $PRGNAM-$VERSION
 chown -R root:root .
+chmod 644 doc/html/fonts/OFL.txt # this file shouldn't be +x
 find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
         \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
+
+# Fix some mildly broken constructs in vice.texi, so we can generate
+# the vice.info doc.
+# 20250122 bkw: This is persistently broken upstream. They must be
+# using something else besides the 'makeinfo' we have in Slackware,
+# or they would have noticed by now. Had to add to the patch for 3.9.
+patch -p1 < $CWD/fix_texi.diff
 
 DOCDIR=/usr/doc/$PRGNAM-$VERSION
 PKGDOC=$PKG/$DOCDIR
@@ -113,10 +146,9 @@ export TEXMFVAR=$( pwd )/.texmf-var
 
 # Set proper paths in documentation.
 rm -rf doc/vice.pdf # will be rebuilt, along with the HTML doc.
-sed -i -e "1,2000s/\/usr\/local/\/usr/g" \
+sed -i -e "s/\/usr\/local/\/usr/g" \
        -e "s,/lib/vice/,/share/vice/,Ig" \
      doc/vice.texi
-
 autoreconf -vif
 
 # We build up to 3 times with slightly different ./configure args,
@@ -139,16 +171,20 @@ config() {
   # with a configure argument, because that stops them being built
   # at all.
 
-  CFLAGS="$SLKCFLAGS -w -Wl,--allow-multiple-definition" \
+  # 20230504 bkw: note to self: -w means disable all warnings.
+  CFLAGS="$SLKCFLAGS -w -fcommon -fpermissive" \
   CXXFLAGS="$SLKCFLAGS" \
   DOS2UNIX=/bin/true \
   XA=/bin/true \
   XDG_DESKTOP_MENU=/bin/true \
   ./configure \
     $configarg \
-    $ffmpeg \
+    --disable-ffmpeg \
     $pulseopt \
+    --enable-html-docs \
+    --enable-platformdox \
     --enable-x64 \
+    --enable-x64-image \
     --prefix=/usr \
     --libdir=/usr/lib${LIBDIRSUFFIX} \
     --sysconfdir=/etc \
@@ -156,19 +192,16 @@ config() {
     --mandir=/usr/man \
     --infodir=/usr/info \
     --docdir=$DOCDIR \
-    --with-x \
-    --enable-quicktime \
     --enable-ethernet \
-    --enable-parsid \
+    --disable-parsid \
     --enable-cpuhistory \
     --with-mpg123 \
     --with-flac \
     --with-vorbis \
     --with-gif \
-    --with-jpeg \
     --with-png \
     --enable-midi \
-    --enable-lame \
+    --enable-catweasel \
     --build=$ARCH-slackware-linux
 
   make
@@ -178,14 +211,18 @@ config() {
 # rename them to <whatever>-sdl2 (or -sdl1).
 buildsdl() {
   local exesuf="-sdl$1"
-  local configarg="--disable-pdf-docs --enable-sdlui"
-  [ "$1" = "2" ] && configarg+="2"
+  local configarg="--disable-pdf-docs --enable-sdl${1}ui"
 
   config "$configarg"
   make -C src install-binPROGRAMS \
               DESTDIR="$PKG" \
               EXEEXT="$exesuf" \
               INSTALL_PROGRAM="install -s -m0755"
+
+  # 20250509 bkw: the SDL keymaps weren't getting installed,
+  # meaning the emulator would start up, but the keyboard
+  # didn't work. Grr.
+  make install-data DESTDIR="$PKG"
 
   # get rid of the non-graphical tools (the gtk3 build will
   # install them again without -$exesuf).
@@ -213,12 +250,16 @@ EOF
 esac
 
 # Now build & install the whole project with the gtk3 UI.
-config "--enable-native-gtk3ui --enable-desktop-files"
+# 20250122 bkw: whoops, PDF doc was missing from 3.8, restore it.
+config "--enable-pdf-docs --enable-gtk3ui --enable-desktop-files"
 make
 make install-strip DESTDIR=$PKG
 
-# This is a source file, doesn't belong in the package.
-rm -f $PKGDOC/*.texi
+# 20240214 bkw: in 3.8, 'make install' no longer installs any of
+# the docs. Do it manually. Leave out building/ (we don't need to
+# care about building on fedora, windows, mac OS).
+mkdir -p $PKGDOC
+cp -a doc/*.txt $PKGDOC
 
 # Install desktop files manually.
 mkdir -p $PKG/usr/share/desktop-directories \
@@ -231,14 +272,25 @@ install -m0644 src/arch/gtk3/data/unix/vice*directory \
 # Documentation. vice.pdf has already been installed to the doc dir.
 # Generate info, plaintext, and HTML versions here. The text doc is
 # harder to navigate, but easier to grep, so it's worth having IMO.
-makeinfo doc/$PRGNAM.texi
-mkdir -p $PKG/usr/info
-mv $PRGNAM.info* $PKG/usr/info
+# 20221130 bkw: vice.texi no longer works with makeinfo, as of
+# vice-3.6.1. Not sure whether this is because we have an
+# outdated texinfo package in Slackware 15.0, or because upstream
+# broke some kind of rule... regardless, it's disabled for now.
+# 20230504 bkw: Patched vice.texi, so this is now enabled by default.
+if [ "${MAKEINFO:-yes}" = "yes" ]; then
+	makeinfo doc/$PRGNAM.texi
+	mkdir -p $PKG/usr/info
+	mv $PRGNAM.info* $PKG/usr/info
+	gzip -9 $PKG/usr/info/*
 
-makeinfo --plaintext doc/$PRGNAM.texi > $PKGDOC/$PRGNAM.txt
+	makeinfo --plaintext doc/$PRGNAM.texi > $PKGDOC/$PRGNAM.txt
+fi
 
-( cd doc ; texi2any --html $PRGNAM.texi )
-cp -a doc/$PRGNAM $PKGDOC/html
+# 20221130 bkw: HTML docs do get built, but never installed.
+mkdir -p $PKGDOC/html
+cp -a doc/html/{NEWS,COPYING,fonts/,images/,*.{html,css,ico}} $PKGDOC/html
+ln -s html/NEWS $PKGDOC/NEWS
+ln -s html/COPYING $PKGDOC/COPYING
 
 # 20210810 bkw: as of 3.5, upstream dropped the man pages. I'm
 # including the man pages from 3.4 in the 3.5 package. Edited them
@@ -251,7 +303,7 @@ for i in $CWD/man/*.?; do
       -e "s,@PDFDOC@,$DOCDIR/$PRGNAM.pdf," \
       < $i > $PKG/usr/man/man1/$( basename $i )
 done
-gzip -9 $PKG/usr/man/man?/*.? $PKG/usr/info/*
+gzip -9 $PKG/usr/man/man?/*.?
 for i in x64 x64sc xscpu64 x64dtv x128 xvic xpet xplus4 xcbm2 xcbm5x0; do
   ln -s vice.1.gz $PKG/usr/man/man1/$i.1.gz
 done
@@ -275,6 +327,7 @@ sed -e "s,@PA@,$PA,"   \
     -e "s,@SDL@,$SDL," \
   $CWD/slack-desc > $PKG/install/slack-desc
 cat $CWD/doinst.sh > $PKG/install/doinst.sh
+cat $CWD/douninst.sh > $PKG/install/douninst.sh
 
 cd $PKG
 /sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

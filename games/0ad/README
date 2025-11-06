@@ -1,8 +1,8 @@
 0 A.D. (pronounced "zero ey-dee") is a free, open-source, cross-platform
 real-time strategy (RTS) game of ancient warfare.
+there is a scenario editor accessible from the game.
 
-To include the Atlas editor, which requires wxPython3
-    ATLAS=enable ./0ad.SlackBuild
+rust-opt is a new dep for 0.37.0 to build the bundled spidermonkey
 
-v0.0.23b is the last version to run on stock slackware 14.2 as newer
-versions require at least gcc 7 or newer to compile.
+3d hardware accelleration has not been tested. feedback on this is
+appriciated.

@@ -3,7 +3,7 @@
 # Slackware build script for Bullet Physics
 
 # Originally Written by Jože Zobec <jozze.zepl@gmail.com>
-# Copyright 2014-2022 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
+# Copyright 2014-2023 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
 # All Right Reserved
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,8 +26,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=bullet
-VERSION=${VERSION:-3.21}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-3.25}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -39,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -90,6 +87,7 @@ cd build
         -DINSTALL_LIBS=ON \
         -DINSTALL_EXTRA_LIBS=ON \
 	-DUSE_DOUBLE_PRECISION=ON \
+	-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 	-DCMAKE_BUILD_TYPE=Release ..
   make
   make install DESTDIR=$PKG

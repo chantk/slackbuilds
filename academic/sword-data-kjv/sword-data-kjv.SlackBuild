@@ -2,7 +2,7 @@
 
 # Slackware build script for sword-data-kjv
 
-# Copyright 2015-2021 Tim Dickson, email: tim at googlemail.com
+# Copyright 2015-2023 Tim Dickson, email: tim at googlemail.com
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,8 +25,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=sword-data-kjv
-VERSION=${VERSION:-1.8.1_1}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-1.9.0_2}
+BUILD=${BUILD:-3}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -53,9 +53,9 @@ cd $TMP
 rm -rf $PRGNAM-$VERSION
 
 #check if sword is installed and get data location, otherwise use default
-DATADEST="/usr/shared/sword/"
+DATADEST="/usr/share/sword/"
 if [ -e /etc/sword.conf ]; then
-  DATADEST=`cat /etc/sword.conf|grep DataPath|awk -F"=" '{print $2}'`
+  DATADEST=$( cat /etc/sword.conf|grep DataPath|awk -F"=" '{print $2}' )
   if [ "x$DATADEST" = "x" ]||[ "x$DATDEST" = "x/" ]; then
     #this should not happen, give message and stop build
     #it doesn't stop deliberately malicious configuration, but at least
@@ -67,10 +67,10 @@ fi
 
 mkdir -p $PKG${DATADEST}
 cd $PKG${DATADEST}
-chown -R root:root .
 unzip $CWD/KJV.zip
 unzip $CWD/StrongsGreek.zip
 unzip $CWD/StrongsHebrew.zip
+chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
   -o -perm 511 \) -exec chmod 755 {} \; -o \

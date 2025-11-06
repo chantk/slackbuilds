@@ -2,6 +2,7 @@
 
 # Slackware build script for gradle
 
+# Copyright 2024  Riza Dindir, rdindir[at]yahoo[dot]com
 # Copyright 2019  Sukma Wardana, sukma.wardana[at]mail[dot]com
 # Copyright 2014  Arun Mascarenhas, arunmascarenhas[at]yahoo[dot]com
 # Copyright 2014  Arun Mascarenhas, Kansas City, MO, USA
@@ -29,7 +30,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=gradle
-VERSION=${VERSION:-5.5.1}
+VERSION=${VERSION:-8.14.1}
 ARCH=noarch
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
@@ -59,7 +60,7 @@ unzip $CWD/${PRGNAM}-$VERSION-all.zip
 cd ${PRGNAM}-$VERSION
 chown -R root:root .
 
-cp -a bin lib init.d media $PKG/$GRADLE_HOME/
+cp -a bin lib init.d $PKG/$GRADLE_HOME/
 
 mkdir -p $PKG/etc/profile.d/
 install -m755 $CWD/$PRGNAM.csh $PKG/etc/profile.d/$PRGNAM.csh
@@ -72,7 +73,12 @@ cd -
 rm -f $PKG/usr/share/gradle/bin/gradle.bat
 
 mkdir -p $PKG/usr/doc/${PRGNAM}-$VERSION
-cp -a NOTICE LICENSE $PKG/usr/doc/${PRGNAM}-$VERSION
+if [ "${INCLUDE_DOCS}" = "NO" ]
+then
+  cp -a README NOTICE LICENSE $PKG/usr/doc/${PRGNAM}-$VERSION
+else
+  cp -a README NOTICE LICENSE docs/ $PKG/usr/doc/${PRGNAM}-$VERSION
+fi
 cat $CWD/${PRGNAM}.SlackBuild > $PKG/usr/doc/${PRGNAM}-$VERSION/${PRGNAM}.SlackBuild
 
 mkdir -p $PKG/install

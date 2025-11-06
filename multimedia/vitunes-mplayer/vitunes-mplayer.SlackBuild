@@ -2,15 +2,17 @@
 
 # Slackware build script for vitunes-mplayer
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20230103 bkw: BUILD=2, strip binary.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=vitunes-mplayer
 VERSION=${VERSION:-2.3}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -82,7 +84,7 @@ sed -i \
 
 make -f Makefile.linux PREFIX=/usr
 mkdir -p $PKG/usr/bin $PKG/usr/man/man1
-install -m0755 $TARNAME $PKG/usr/bin/$TARNAME
+install -s -m0755 $TARNAME $PKG/usr/bin/$TARNAME
 gzip -c < $TARNAME.1 > $PKG/usr/man/man1/$TARNAME.1.gz
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION

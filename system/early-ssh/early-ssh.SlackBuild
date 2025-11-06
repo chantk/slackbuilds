@@ -3,6 +3,7 @@
 # Slackware build script for early-ssh
 
 # Copyright 2016-2018 Andrew Clemons, Wellington New Zealand
+# Copyright 2024 Andrew Clemons, Tokyo Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,18 +26,15 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=early-ssh
-VERSION=${VERSION:-git4acf000}
+VERSION=${VERSION:-git15791d2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
-GITREV=4acf000ddbe564dcafec626ec0dc7eadd821a857
+GITREV=15791d22ace74011486c299aa29c22f31b3364f6
 
 ARCH=noarch
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0

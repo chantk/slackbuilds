@@ -3,7 +3,7 @@
 # Slackware build script for gnucash
 
 # Copyright 2015  Trayan Denev, tdenev@gmail.com
-# This version Copyright 2018-2021 Lenard Spencer <lenardrspencer@gmail.com>
+# This version Copyright 2018-2025 Lenard Spencer <lenardrspencer@gmail.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=gnucash
-VERSION=${VERSION:-4.6}
+VERSION=${VERSION:-5.12}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,9 +40,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -70,6 +67,13 @@ elif [ "$ARCH" = "arm" ]; then
 else
   SLKCFLAGS="-O2"
   LIBDIRSUFFIX=""
+fi
+
+# Check for a previous installation, and abort if found:
+if [ -e /usr/bin/gnucash ]; then
+  echo "Found a previous installation of gnucash!"
+  echo "Please remove it before running this script again."
+  exit 1
 fi
 
 if [ "$DBI" = "yes" ]; then
@@ -122,22 +126,22 @@ find -L . \
 mkdir -p build
 cd build
   cmake \
-    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_C_FLAGS="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DLIBDIR=/usr/lib${LIBDIRSUFFIX} \
+    -DCMAKE_INSTALL_DATADIR=/usr/share \
+    -DCMAKE_INSTALL_DOCDIR=/usr/doc/$PRGNAM-$VERSION \
     -DSYSCONFDIR=/etc \
     -DCOMPILE_GSCHEMAS=OFF \
     $DBIARGS \
     $W_PYTHON \
     $OFXBANKING \
     $AQBANKING \
-    -GNinja \
-    -DGNUCASH_BUILD_ID="$VERSION-`date -I` by $PACKAGER" \
-    -DCMAKE_BUILD_TYPE=release ..
+    -DGNUCASH_BUILD_ID="$VERSION `date -I` by $PACKAGER" \
+    -DCMAKE_BUILD_TYPE=Release ..
 
-  "${NINJA:=ninja}"
-  DESTDIR="$PKG" $NINJA install
+  make
+  make install DESTDIR=$PKG
 cd ..
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
@@ -147,14 +151,14 @@ mv $PKG/usr/share/man/ $PKG/usr/
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
+# gnucash-valgrind should be executable:
+chmod 755 $PKG/usr/bin/gnucash-valgrind
+
 # Don't clobber this
 mv $PKG/etc/gnucash/environment $PKG/etc/gnucash/environment.new
-
-mkdir -p $PKG/usr/doc
-mv $PKG/usr/share/doc/$PRGNAM $PKG/usr/doc/$PRGNAM-$VERSION
+# Remove all those old ChangeLogs:
+rm $PKG/usr/doc/$PRGNAM-$VERSION/ChangeLog.{1,2}*
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
-rmdir $PKG/usr/share/doc
-ln -s $PRGNAM-$VERSION $PKG/usr/doc/$PRGNAM
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

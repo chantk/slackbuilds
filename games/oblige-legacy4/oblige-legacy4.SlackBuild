@@ -2,9 +2,12 @@
 
 # Slackware build script for oblige-legacy4
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20250806 bkw: BUILD=5, fix for impending fltk-1.4 upgrade.
+# 20230107 bkw: BUILD=4, remove INSTALL.txt from doc dir.
 
 # 20211020 bkw: BUILD=3
 # - make the icon transparent
@@ -30,7 +33,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=oblige-legacy4
 VERSION=${VERSION:-4.28b}
-BUILD=${BUILD:-3}
+BUILD=${BUILD:-5}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -53,16 +56,12 @@ OUTPUT=${OUTPUT:-/tmp}
 
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
 fi
 
 set -e
@@ -78,8 +77,8 @@ rm -rf ${SRCNAM}-${VERSION}-source
 unzip $CWD/$OLDNAM-$SRCVER-source.zip
 cd ${SRCNAM}-${VERSION}-source
 chown -R root:root .
-find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
-        \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
+find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} + -o \
+        \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} +
 
 # Makefile.unixy originally came from the oblige author, I've hacked
 # it up to make it work with oblige 4.x and SBo's fltk13.
@@ -96,6 +95,11 @@ sed -i '/button_line *= *false/s,false,0,' gui/ui_console.cc
 # current version.
 sed -i "s,\.$OLDNAM,.$PRGNAM,g" doc/File_Layout.txt gui/main.cc
 sed -i "s,share/$OLDNAM,share/$PRGNAM," gui/main.cc
+
+# 20250806 bkw: this is *really fucking stupid*: upstream put in a
+# check that says "FLTK 1.3.0 or newer", but it actually checks for
+# 1.3.x (so 1.4.x will fail).
+sed -i '/FL_MINOR_VERSION/s,!=,<,' gui/ui_window.cc
 
 make INSTALL_PREFIX=/usr OPTIMISE="$SLKCFLAGS"
 make install INSTALL_PREFIX=$PKG/usr
@@ -120,9 +124,11 @@ ln -s ../icons/hicolor/48x48/apps/$PRGNAM.png $PKG/usr/share/pixmaps/$PRGNAM.png
 mkdir -p $PKG/usr/man/man6
 gzip -9c < $CWD/$PRGNAM.6 > $PKG/usr/man/man6/$PRGNAM.6.gz
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp *.txt doc/*.txt $PKG/usr/doc/$PRGNAM-$VERSION
-cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKGDOC
+rm -f INSTALL.txt
+cp *.txt doc/*.txt $PKGDOC
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

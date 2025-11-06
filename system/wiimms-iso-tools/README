@@ -1,3 +1,5 @@
+wiimms-iso-tools (command line ISO and WBFS tools)
+
 Wiimms ISO Tools is a set of command line tools to manipulate Wii and
 GameCube ISO images and WBFS containers. The toolset consists of the
 following tools:
@@ -11,10 +13,10 @@ wit (Wiimms ISO Tool):
 
 wwt (Wiimms WBFS Tool):
 
-    This is the main WBFS manipulation tool (WBFS manager). It can create,
-    check, repair, verify and clone WBFS files and partitions. It can
-    list, add, extract, remove, rename and recover ISO images as part
-    of a WBFS.
+    This is the main WBFS manipulation tool (WBFS manager). It
+    can create, check, repair, verify and clone WBFS files and
+    partitions. It can list, add, extract, remove, rename and recover
+    ISO images as part of a WBFS.
 
 wdf (Wiimms WDF Tool):
 

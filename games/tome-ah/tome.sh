@@ -1,6 +1,13 @@
 #!/bin/sh
-USERDIR=$(pwd)
 GAMES_TOME=/usr/share/games/tome-ah/bin
-cd $GAMES_TOME
-exec ${GAMES_TOME}/tome "$@"
-cd $USERDIR
+case $(basename $0) in
+  tome-ah-gcu)
+    exec ${GAMES_TOME}/tome-gcu "$@"
+    ;;
+  tome-ah-gtk2)
+    exec ${GAMES_TOME}/tome-gtk2 "$@"
+    ;;
+  tome-ah-x11)
+    exec ${GAMES_TOME}/tome-x11 "$@"
+    ;;
+  esac

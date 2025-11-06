@@ -21,5 +21,3 @@ latest version of evolving specifications.
 
 The SlackBuild just repackages the official FOP binary release, plus
 the binary release of the OFFO hyphenation package.
-
-jai and jai-imageio are optional but recommended dependencies.

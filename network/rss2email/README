@@ -1,6 +1,11 @@
-A python script that converts RSS/Atom newsfeeds to email.
+rss2email (rss to email gateway)
 
-It is the successor to the rss2email by Aaron Swartz, available on SBo
-as r2e.
+A python script that forward RSS feeds to your email address. This
+allows you to view RSS feeds in an interface you are already familiar
+with, and to apply filters to incoming feeds. Normally, you'll want
+to run it from your crontab.
 
-rss2email will conflict with r2e.
+It is the community maintained successor to the rss2email by Aaron
+Swartz.
+
+The executable and man page are called r2e.

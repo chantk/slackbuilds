@@ -2,14 +2,20 @@
 
 # Slackware build script for plocate
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20241203 bkw: update for v1.1.23.
+# 20240217 bkw: update for v1.1.22.
+# 20230706 bkw: update for v1.1.19.
+# 20230214 bkw: update for v1.1.18.
+# 20221228 bkw: update for v1.1.17.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=plocate
-VERSION=${VERSION:-1.1.13}
+VERSION=${VERSION:-1.1.23}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -27,7 +33,6 @@ if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   exit 0
 fi
 
-CWD=$(pwd)
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}

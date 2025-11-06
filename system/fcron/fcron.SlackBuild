@@ -25,28 +25,14 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=fcron
-VERSION=${VERSION:-3.3.0}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-3.4.0}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 # Select fcron's default user/group
 FCRON_USER=${FCRON_USER:-fcron}
 FCRON_GROUP=${FCRON_GROUP:-fcron}
-
-if ! getent group $FCRON_GROUP >/dev/null;  then
-  echo "Error, the group $FCRON_GROUP does not exist."
-  echo "Create the group and user like this:"
-  echo "  groupadd -g 289 $FCRON_GROUP"
-  echo "  useradd  -u 289 -g $FCRON_GROUP -d /var/spool/fcron -M -s /bin/false $FCRON_USER"
-  exit 1
-fi
-if ! getent passwd $FCRON_USER >/dev/null; then
-  echo "Error, the userid $FCRON_USER does not exist."
-  echo "Create the user like this:"
-  echo "  useradd  -u 289 -g $FCRON_GROUP -d /var/spool/fcron -M -s /bin/false $FCRON_USER"
-  exit 1
-fi
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -62,6 +48,21 @@ fi
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
+fi
+
+# Make sure the fcron default user and group exist
+if ! getent group $FCRON_GROUP >/dev/null;  then
+  echo "Error, the group $FCRON_GROUP does not exist."
+  echo "Create the group and user like this:"
+  echo "  groupadd -g 289 $FCRON_GROUP"
+  echo "  useradd  -u 289 -g $FCRON_GROUP -d /var/spool/fcron -M -s /bin/false $FCRON_USER"
+  exit 1
+fi
+if ! getent passwd $FCRON_USER >/dev/null; then
+  echo "Error, the userid $FCRON_USER does not exist."
+  echo "Create the user like this:"
+  echo "  useradd  -u 289 -g $FCRON_GROUP -d /var/spool/fcron -M -s /bin/false $FCRON_USER"
+  exit 1
 fi
 
 TMP=${TMP:-/tmp/SBo}
@@ -122,8 +123,8 @@ for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; r
 
 install -D -m 0644 $CWD/rc.fcron $PKG/etc/rc.d/rc.fcron.new
 
-cp -a README                  $PKG/usr/doc/$PRGNAM-$VERSION
-cp $CWD/README             $PKG/usr/doc/$PRGNAM-$VERSION/README.slackware
+cp -a README.md               $PKG/usr/doc/$PRGNAM-$VERSION
+cp $CWD/README                $PKG/usr/doc/$PRGNAM-$VERSION/README.slackware
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 cp $CWD/sample-root-fcrontab.txt $PKG/usr/doc/$PRGNAM-$VERSION
 

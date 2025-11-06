@@ -4,5 +4,3 @@ module. In addition to supporting gmp or mpir for multiple-precision
 integer and rational arithmetic, gmpy2 adds support for the mpfr
 (correctly rounded real floating-point arithmetic) and mpc (correctly
 rounded complex floating-point arithmetic) libraries.
-
-This is the python3 version of gmpy2.

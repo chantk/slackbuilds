@@ -2,10 +2,17 @@
 
 # Slackware build script for sonic-visualiser
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
+# 20250819 bkw: note to self: sonic-visualiser 5.x requires qt6,
+# so this can stay at the last 4.x version until the next Slackware
+# release. I'm not going to require qt6 unless someone actually emails
+# me and requests that I update sonic-visualiser.
+
+# 20230713 bkw: update for 4.5.2.
+# 20230112 bkw: update for 4.5.1.
 # 20211207 bkw: update for 4.4.
 # - liblo is now a hard dep.
 # - jack is a hard dep again.
@@ -71,7 +78,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=sonic-visualiser
-VERSION=${VERSION:-4.4}
+VERSION=${VERSION:-4.5.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}

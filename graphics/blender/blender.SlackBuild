@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # Slackware build script for Blender
-# Ryan P.C. McQuen | Everett, WA | ryanpcmcquen@member.fsf.org
-# 2017 - Dhaby Xiloj <slack.dhabyx@gmail.com>
 
 # Copyright 2008-2013  Robby Workman  Northport, AL, USA
+# Copyright 2014-2017  Ryan P.C. McQuen | Everett, WA | ryanpcmcquen@member.fsf.org
+# Copyright 2017       Dhaby Xiloj <slack.dhabyx@gmail.com>
+# Copyright 2024-2025 Jeremy Hansen <jebrhansen+SBo@gmail.com>
+
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -24,17 +26,21 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220404 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - strip the python interpreter and one shared lib that weren't already.
+# - remove the broken symlinks in the icons dir. upstream doesn't include
+#   PNG icons (I assume it did at one time), only an SVG one.
+# - add SlackBuild to doc dir.
+
 # Thanks to Giorgio Peron <giorgio.peron@gmail.com> for some build tips
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=blender
-VERSION=${VERSION:-2.90.1}
+VERSION=${VERSION:-4.5.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
-
-SRCVERSION=${VERSION}-linux64
 
 # We'll remove the libGL* shared libaries that are shipped with blender (and
 # instead use the ones that are shipped with Slackware's Xorg)
@@ -47,9 +53,6 @@ case "$( uname -m )" in
      *) ARCH=$( uname -m ) ;;
 esac
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -62,9 +65,7 @@ OUTPUT=${OUTPUT:-/tmp}
 set -e
 
 if [ "$ARCH" = "x86_64" ]; then
-  break
-elif [ "$ARCH" = "i686" ]; then
-  break
+  SRCVERSION=${VERSION}-linux-x64
 else
   printf "\n\n$ARCH is not supported... \n"
   exit 1
@@ -80,6 +81,7 @@ chown -R root:root .
 
 # Move the docs to our standard location first
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 mv *.txt readme.html \
    $PKG/usr/doc/$PRGNAM-$VERSION
 
@@ -97,15 +99,24 @@ if [ "$LMTFA" != "yes" ]; then
   rm -f $PKG/opt/blender/lib/libGL*
 fi
 
-# Put symlinks to icons in the standard places
-for size in 16x16 22x22 24x24 32x32 48x48 ; do
-  mkdir -p $PKG/usr/share/icons/hicolor/$size/apps
-  ln -s /opt/blender/icons/$size/apps/blender.png \
-        $PKG/usr/share/icons/hicolor/$size/apps/
-done
+# 20220404 bkw: a couple of things aren't stripped... this
+# is noticeably faster than the template find|strip.
+find $PKG/opt/blender -type f -print0  | \
+  xargs -0 file -m /etc/file/magic/elf | \
+  grep 'ELF.*dynamic.*not stripped'    | \
+  cut -d: -f1 | xargs strip
+
+# Put symlinks to icons in the standard places.
+# 20220404 bkw: looks like upstream got rid of PNG icons and only
+# ships an SVG (which has moved).
 mkdir -p $PKG/usr/share/icons/hicolor/scalable/apps
-  ln -s /opt/blender/icons/scalable/apps/blender.svg \
+  ln -s ../../../../../../opt/blender/blender.svg \
         $PKG/usr/share/icons/hicolor/scalable/apps/
+
+# Correct permissions for executables/libraries
+find $PKG/opt/blender/${VERSION%.*}/python/lib -name *.so -exec chmod +x {} +
+find $PKG/opt/blender/lib -name *.so* -exec chmod +x {} +
+find $PKG/opt/blender/${VERSION%.*}/scripts/ -name kernel_*.cubin -exec chmod +x {} +
 
 # Add a desktop menu entry
 mkdir -p $PKG/usr/share/applications

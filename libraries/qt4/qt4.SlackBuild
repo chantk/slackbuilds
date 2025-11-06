@@ -32,9 +32,14 @@
 # to build on Slackware-current as of January 23, 2021. The stuff
 # in patches/ was collected (and in a few cases written) by him,
 # and he worked out the correct order to apply them. B. Watson
-# (yalhcru@gmail.com) modified pprkut's version to make it fit the SBo
+# (urchlay@slackware.uk) modified pprkut's version to make it fit the SBo
 # template, and to make it install to /usr/lib(64)?/qt4/ to stay out of
 # the way.
+
+# 20220409 bkw: BUILD=2
+# - forgot to put the SlackBuild in the doc dir.
+# - resize icon correctly so it's really 48x48.
+# - get rid of Encoding from .desktop files (deprecated).
 
 # 20220302 bkw: webkit already wasn't being built, even with the
 # -webkit option passed to configure, so update the script to remove
@@ -45,7 +50,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=qt4
 VERSION=${VERSION:-4.8.7}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -66,10 +71,7 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i486" ]; then
-  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "i586" ]; then
+if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
   LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
@@ -112,7 +114,7 @@ chown -R root:root .
 find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
         \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
 
-if [ $ARCH = "i486" -o $ARCH = "i586" -o "$ARCH" = "i686" ]; then
+if [ "$ARCH" = "i486" -o "$ARCH" = "i586" -o "$ARCH" = "i686" ]; then
   sed -i -e "s/QMAKE_CFLAGS_RELEASE        += -O2/QMAKE_CFLAGS_RELEASE        += $SLKCFLAGS/" mkspecs/common/gcc-base.conf
 fi
 
@@ -124,8 +126,62 @@ sed -n -e 's/#.*//' -e '/./p' $CWD/patches/series | while read diff; do
   patch -p1 < $CWD/patches/$diff
 done
 
+# Replace obsolete TR1 functions
+sed -i -e 's|tr1::has_trivial_constructor|is_trivially_constructible|' \
+  -e 's|tr1::has_trivial_destructor|is_trivially_destructible|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/TypeTraits.h
+
+# Use rvalue of m_attributesInPrevious
+# (https://bugs.webkit.org/show_bug.cgi?id=59261)
+sed -i 's|, existingTransition->m_attributesInPrevious|, +existingTransition->m_attributesInPrevious|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.h
+sed -i 's|, m_attributesInPrevious)|, +m_attributesInPrevious)|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/runtime/Structure.cpp
+
+# Remove auto_ptr deprecation warnings
+sed -i 's|auto_ptr|unique_ptr|g' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/*.h \
+  src/3rdparty/javascriptcore/JavaScriptCore/parser/Nodes.h \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/unicode/Collator*
+sed -i 's|(data)|(std::move(data))|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/parser/Nodes.h
+
+# Remove invalid template usage in ctors (this is only currently a warning though)
+sed -i 's|StringTypeAdapter<.*>(|StringTypeAdapter(|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/runtime/UString.h
+
+# Use the ASSERT macro that masks unused variables
+sed -i 's|ASSERT(differenceBetween(label|ASSERT_UNUSED(label, differenceBetween(label|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/assembler/MacroAssemblerX86_64.h
+
+# Use a proper compile-time assert function
+sed -i 's|COMPILE_ASSERT(exp, name) .*|COMPILE_ASSERT(exp, name) static_assert((exp), #name)|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/Assertions.h
+
+# Correct the swap function name
+sed -i -e 's|swap(from|hashTableSwap(from|' \
+  -e 's|inline void swap|inline void hashTableSwap|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/HashTable.h
+sed -i 's|// swap pairs|template<typename T> inline void hashTableSwap(T\& a, T\& b) { swap(a, b); }\n\n&|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/HashTable.h
+
+# Fixup obviously wrong return value
+sed -i 's|return false|return nullptr|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/yarr/RegexCompiler.cpp
+
+# Silence -Wclass-memaccess warnings
+sed -i 's|memcpy(dst|memcpy(reinterpret_cast<char*>(dst)|' \
+  src/3rdparty/javascriptcore/JavaScriptCore/wtf/Vector.h
+sed -i -e 's|memcpy(x.p|memcpy(reinterpret_cast<char*>(x.p)|' \
+  -e 's|memmove(i|memmove(reinterpret_cast<char*>(i)|' \
+  src/corelib/tools/qvector.h
+
+# Do a SelectionFlags cast in accessible plugin
+sed -i 's|QItemSelectionModel::Columns \& QItemSelectionModel::Deselect|QItemSelectionModel::SelectionFlags(&)|' \
+  src/plugins/accessible/widgets/itemviews.cpp
+
 export CFLAGS="$SLKCFLAGS"
-export CXXFLAGS="$SLKCFLAGS -std=gnu++98 -fpermissive -fno-delete-null-pointer-checks"
+export CXXFLAGS="$SLKCFLAGS -std=c++17 -fpermissive -fno-delete-null-pointer-checks"
 export OPENSOURCE_CXXFLAGS="$CXXFLAGS"
 
 ./configure \
@@ -244,7 +300,7 @@ for icon in tools/linguist/linguist/images/icons/linguist-*-32.png ; do
   install -p -m644 -D ${icon} $PKG/usr/share/icons/hicolor/${size}x${size}/apps/linguist.png
 done
 # Qt logo:
-convert doc/src/images/qt-logo.png  -resize 48x48 $PKG/usr/share/icons/hicolor/48x48/apps/qt-logo.png
+convert doc/src/images/qt-logo.png -resize 48x48! $PKG/usr/share/icons/hicolor/48x48/apps/qt-logo.png
 
 # And the .desktop files
 mkdir -p $PKG/usr/share/applications
@@ -257,7 +313,6 @@ Exec=designer
 Icon=designer
 MimeType=application/x-designer;
 Terminal=false
-Encoding=UTF-8
 Type=Application
 Categories=Qt;Development;
 EOF
@@ -268,7 +323,6 @@ Comment=Shows Qt4 documentation and examples
 Exec=assistant
 Icon=assistant
 Terminal=false
-Encoding=UTF-8
 Type=Application
 Categories=Qt;Development;Documentation;
 EOF
@@ -280,7 +334,6 @@ Exec=linguist
 Icon=linguist
 MimeType=text/vnd.trolltech.linguist;application/x-linguist;
 Terminal=false
-Encoding=UTF-8
 Type=Application
 Categories=Qt;Development;
 EOF
@@ -291,7 +344,6 @@ Comment=Configure Qt4 behavior, styles, fonts
 Exec=qtconfig
 Icon=qt-logo
 Terminal=false
-Encoding=UTF-8
 Type=Application
 Categories=Qt;Settings;
 EOF
@@ -306,6 +358,7 @@ if [ -d $PKG/usr/lib${LIBDIRSUFFIX}/qt4/doc/html ]; then
   )
 fi
 cat $CWD/README_SBo.txt > $PKGDOC/README_SBo.txt
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/doinst.sh > $PKG/install/doinst.sh

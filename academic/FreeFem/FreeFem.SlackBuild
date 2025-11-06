@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Slackware build script for FreeFem
-# Based on the Slackware 14.2 SlackBuild and on PKGBUILD script for freefem from AUR
+# Based on the Slackware 15.0 SlackBuild and on PKGBUILD script for freefem from AUR
 #
-# Copyright 2019-2020, Fellype do Nascimento, Campinas - Brazil
+# Copyright 2019-2024, Fellype do Nascimento, Guaratinguetá - Brazil
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,11 +26,13 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=FreeFem
-VERSION=${VERSION:-4.5}
+VERSION=${VERSION:-4.15}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
-SRCVER=${SRCVER:-4.5} # Variable used in some versions that are numbered as x.y-z
+## TODO: remove $SRCVER in the next update since the FreeFem team is not
+## distributing the sources numbered as x.y-z anymore
+SRCVER=${SRCVER:-4.15}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -40,13 +42,12 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
 fi
+
+set -e
 
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
@@ -55,12 +56,15 @@ OUTPUT=${OUTPUT:-/tmp}
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
   SPEC=""
+  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
   SPEC=""
+  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
   SPEC="-spec linux-g++-64"
+  LIBDIRSUFFIX="64"
 fi
 
 
@@ -84,6 +88,7 @@ cp $CWD/tetgen1.5.1-beta1.tar.gz 3rdparty/pkg
 autoreconf -i
 
 ./configure \
+     --libdir=/usr/lib${LIBDIRSUFFIX} \
      --prefix=/usr \
      --sysconfdir=/etc \
      --disable-mumps \
@@ -93,19 +98,20 @@ autoreconf -i
 
 find . -name Makefile -exec sed -i 's+^gcc+gcc =+' {} \;
 find . -name Makefile -exec sed -i 's+^dir+dir =+' {} \;
+find . -name Makefile -exec sed -i "s:/usr/lib/ff++/:/usr/lib${LIBDIRSUFFIX}/ff++/:" {} \;
 
-## TODO: Enable mumps - FreeFem fails to compile with this option enabled up to now
+## TODO: Enable mumps
 
 make
 make install DESTDIR=$PKG
 
-find "$PKG"/usr/lib/ff++/ -name "*.h" -exec chmod o+r {} \;
+find "$PKG"/usr/lib${LIBDIRSUFFIX}/ff++/ -name "*.h" -exec chmod o+r {} \;
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a AUTHORS CHANGELOG.md README.md $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a AUTHORS CHANGELOG.md LICENSE.md README.md $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

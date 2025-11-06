@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+    |-----handy-ruler------------------------------------------------------|
+smpq: smpq (StormLib MPQ archiving utility)
+smpq:
+smpq: SMPQ is StormLib MPQ archiving utility. This utility is designed
+smpq: for full manipulating with Blizzard MPQ archives. It supports
+smpq: extracting, appending, renaming and deleting files in MPQ
+smpq: archives. It also can create MPQ archive. SMPQ can access to
+smpq: different type of MPQ archives and version. It support encrypted,
+smpq: compressed, partial and patched MPQ archives with version 1-4.
+smpq: SMPQ is free opensource command line utility written in C/C++
+smpq: which use multiplatform C++ StormLib library.
+smpq:

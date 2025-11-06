@@ -2,6 +2,10 @@ Neovim is a project that seeks to aggressively refactor Vim in order to:
 
 * Simplify maintenance and encourage contributions
 * Split the work between multiple developers
-* Enable the implementation of new/modern user interfaces without any
-  modifications to the core source
-* Improve extensibility with a new plugin architecture
+* Enable advanced UIs without modifications to the core
+* Maximize extensibility
+
+Optional run-time dependencies:
+* python3-neovim and python2-neovim: for python 3/2 plugin support;
+* xclip or xsel: for X11 clipboard support;
+* wl-clipboard: for clipboard support on wayland

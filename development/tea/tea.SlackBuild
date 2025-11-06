@@ -25,7 +25,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=tea
-VERSION=${VERSION:-60.7.0}
+VERSION=${VERSION:-63.3.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -61,6 +61,9 @@ elif [ "$ARCH" = "i686" ]; then
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
   LIBDIRSUFFIX="64"
+elif [ "$ARCH" = "aarch64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
   LIBDIRSUFFIX=""
@@ -84,7 +87,7 @@ find -L . \
 if [ ${QT4:-no} = yes ]; then
 	QMAKE=qmake-qt4
 elif [ ${QT6:-no} = yes ]; then
-	QMAKE=qmake-qt6
+	QMAKE=qmake6
 else
 	QMAKE=qmake-qt5
 fi

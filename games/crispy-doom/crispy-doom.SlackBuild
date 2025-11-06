@@ -26,8 +26,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=crispy-doom
-VERSION=${VERSION:-5.10.1}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-7.0}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -71,7 +71,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.gz || tar xvf $CWD/$PRGNAM-$PRGNAM-$VERSION.tar.gz
+tar xvf $CWD/$PRGNAM-$VERSION.tar.gz || tar xvf $CWD/$PRGNAM-$PRGNAM-$VERSION.tar.gz || exit 1
 cd $PRGNAM-$PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
@@ -82,13 +82,9 @@ find -L . \
 
 autoreconf -fiv
 
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS -std=c17" \
 ./configure \
   --prefix=/usr \
-  --libdir=/usr/lib${LIBDIRSUFFIX} \
-  --sysconfdir=/etc \
-  --localstatedir=/var \
   --mandir=/usr/man \
   --docdir=/usr/doc/$PRGNAM \
   --bindir=/usr/games \
@@ -103,12 +99,16 @@ find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | gr
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
-# Crispy-doom creates its own doc directory, so we'll use that and rename it:
+# Remove unnecessary GNOME screensaver desktop entry:
+rm -rf $PKG/usr/share/applications/screensavers
+
 mv $PKG/usr/doc/$PRGNAM $PKG/usr/doc/$PRGNAM-$VERSION
-cp -n ChangeLog *.md $PKG/usr/doc/$PRGNAM-$VERSION || true
+( cd $PKG/usr/doc/$PRGNAM-$VERSION
+  mkdir -p $PRGNAM
+  mv *.doom $PRGNAM
+  mv ../crispy-{heretic,hexen,strife} .
+  )
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
-# We'll rename the doc/crispy-heretic folder as well for consistency:
-mv $PKG/usr/doc/crispy-heretic $PKG/usr/doc/crispy-heretic-$VERSION
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

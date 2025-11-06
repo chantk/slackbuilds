@@ -32,15 +32,12 @@ PKGTYPE=${PKGTYPE:-tgz}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
+    i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
        *) ARCH=$( uname -m ) ;;
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -50,8 +47,8 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i486" ]; then
-  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+if [ "$ARCH" = "i586" ]; then
+  SLKCFLAGS="-O2 -march=i586 -mtune=i686"
   LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
@@ -76,6 +73,8 @@ tar xvf $CWD/config.tgz
 # Confuses install.sh
 unset SMLNJ_HOME
 
+patch $TMP/$PRGNAM/config/_arch-n-opsys < $CWD/_arch-n-opsys.patch
+
 config/install.sh
 
 mkdir -p "$PKG/usr/lib/smlnj"
@@ -83,6 +82,7 @@ cp -R "$TMP/$PRGNAM/"{bin,lib} "$PKG/usr/lib/smlnj"
 
 mkdir -p "$PKG/etc/profile.d"
 cp "$CWD/smlnj.sh" "$PKG/etc/profile.d/smlnj.sh"
+chmod +x $PKG/etc/profile.d/smlnj.sh
 
 chown -R root:root .
 find -L . \

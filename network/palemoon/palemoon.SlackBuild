@@ -2,7 +2,7 @@
 
 # Slackware build script for Pale Moon
 
-# Copyright 2018,2019 Vasily Sora USA
+# Copyright 2018,2019,2022,2023 Vasily Sora USA
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -28,10 +28,9 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=palemoon
-VERSION=${VERSION:-29.4.4}
-SRCNAM1=${SRCNAM1:-$PRGNAM-$VERSION.source}
-SRCNAM2=${SRCNAM2:-$PRGNAM-source}
-SRCNAM3=${SRCNAM3:-$PRGNAM-$VERSION.source}
+VERSION=${VERSION:-32.5.0}
+SRCNAM1=${SRCNAM1:-$PRGNAM-${VERSION}_Release}
+SRCNAM2=${SRCNAM2:-uxp-RB_20231030}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -44,9 +43,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -59,6 +55,8 @@ OUTPUT=${OUTPUT:-/tmp}
 OBJ=${OBJ:-obj-$PRGNAM}
 GTK=${GTK:-gtk2}
 
+DOCS="AUTHORS LICENSE README.md SECURITY.md"
+ALSA=${ALSA:-0}
 # You can try changing the optimization level to simply "-O2" if your processor
 # doesn't support sse2 instructions.
 # "-Os" might help if you experience segfaults.
@@ -70,17 +68,12 @@ elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
   LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
-  SLKCFLAGS="-O2 -fPIC"
+  SLKCFLAGS="-O2 -fPIC -Wno-format-overflow"
   LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
   LIBDIRSUFFIX=""
 fi
-
-# look into adding this as an option:
-# elif [ "$ARCH" = "x86_64" ]; then
-#	  SLKCFLAGS="-O2 -D_FORTIFY_SOURCE=2 -fstack-protector --param ssp-buffer-size=4 -fPIE -pie -Wl,-z,relro,-z,now -mindirect-branch=th
-
 
 # The default is to build with official branding. This SlackBuild is used to
 # produce officially approved third party "contributed builds" of Pale Moon.
@@ -153,19 +146,16 @@ PATH=$TMP/autoconf-tmp/usr/bin:$PATH
 
 # Build Pale Moon
 cd $TMP
-rm -rf $SRCNAM2
-tar -xvf $CWD/$SRCNAM1.tar.xz
-cd $SRCNAM2
+rm -rf $SRCNAM1
+tar -xvzf $CWD/$SRCNAM1.tar.gz # --transform s/pale-moon/${SRCNAM1}/
+cd $SRCNAM1
+tar -xvzf $CWD/$SRCNAM2.tar.gz --transform s/${SRCNAM2}/platform/
 
-if [ "${ADNAUSEAM:-block}" = "unblock" ]; then
-	patch -p1 < $CWD/adNauseam-unblock.patch
+#patch -p1 < $CWD/basilisk-include-limits.patch
+GLIB_C_1PATCH=${GLIB_C_1PATCH:-0}
+if [ $GLIB_C_1PATCH = 1 ]; then
+  patch -p2 < $CWD/glib-c-arc4random.c.patch
 fi
-
-# Selectively APPLY patch for glibc 2.30+
-if [ "${PATCH_GLIBC:-no}" = "yes" ]; then
-	patch -p0 < $CWD/glibc-2.30+.patch
-fi
-patch -p1 < $CWD/basilisk-include-limits.patch
 
 chown -R root:root .
 find -L . \
@@ -178,7 +168,7 @@ find -L . \
 # "UnicodeDecodeError: 'ascii' codec can't decode byte 0xe2 in position 36: ordinal not in range(128)"
 export LANG=C
 
-export MOZCONFIG="$TMP/$SRCNAM2/.mozconfig"
+export MOZCONFIG="$TMP/$SRCNAM1/.mozconfig"
 export MOZILLA_OFFICIAL=1
 export MOZ_MAKE_FLAGS=$MAKEFLAGS
 export CFLAGS="$SLKCFLAGS"
@@ -189,6 +179,8 @@ export MOZ_REQUIRE_SIGNING=
 export MOZ_TELEMETRY_REPORTING=
 export PYTHON=/usr/bin/python2
 
+# A stale DBUS_SESSION_BUS_ADDRESS var can cause build failures
+unset DBUS_SESSION_BUS_ADDRESS
 
 # Dev tools are enabled by default in the official binaries, so we should do the same here;
 # passing DEVTOOLS=no to the script, however, will disable them.
@@ -225,7 +217,11 @@ for option in $OPTIONS; do echo "ac_add_options $option" >> .mozconfig; done
 echo "ac_add_options --enable-optimize=\"$OPTIMIZE\"" >> .mozconfig
 
 if ! pkg-config --exists libpulse; then
-echo "ac_add_options --disable-pulseaudio" >> .mozconfig; fi
+  echo "ac_add_options --disable-pulseaudio" >> .mozconfig
+  TAG=${TAG}_alsa
+elif [ $ALSA = 1 ]; then
+  echo "ac_add_options --disable-pulseaudio" >> .mozconfig
+TAG=${TAG}_alsa; fi
 
 if pkg-config --exists jack && [ "${BLACKLIST_JACK:-no}" != "yes" ]; then
 echo "ac_add_options --enable-jack" >> .mozconfig; fi
@@ -267,10 +263,11 @@ ln -s /usr/lib${LIBDIRSUFFIX}/$PRGNAM-$VERSION/browser/icons/mozicon128.png \
 mkdir -p $PKG/usr/share/applications
 cat $CWD/palemoon.desktop > $PKG/usr/share/applications/$PRGNAM.desktop
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a \
-  $TMP/$SRCNAM2/platform/LEGAL $TMP/$SRCNAM2/LICENSE $TMP/$SRCNAM2/README.md $TMP/$SRCNAM2/AUTHORS \
-  $PKG/usr/doc/$PRGNAM-$VERSION/
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/UXP
+for docs in $DOCS; do
+  cp $TMP/${SRCNAM1}/$docs $PKG/usr/doc/$PRGNAM-$VERSION/ || true
+  cp $TMP/${SRCNAM1}/platform/$docs $PKG/usr/doc/$PRGNAM-$VERSION/UXP/ || true
+done
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

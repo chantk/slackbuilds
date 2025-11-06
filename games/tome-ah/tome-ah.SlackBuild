@@ -2,7 +2,7 @@
 
 # Slackware build script for tome-ah
 
-# Copyright 2017, SlackBuilds.org Project, David Melik, Spokane, WA, USA
+# Copyright 2024, SlackBuilds.org Project, David Melik, Spokane, WA, USA
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,12 +25,14 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=tome-ah
-VERSION=${VERSION:-2.3.11_ah}
+VERSION=${VERSION:-20240912_203c8c1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
-SRCVER=$(echo $VERSION | tr _ -)
+GITVER="$( echo $VERSION | cut -d_ -f2 )"
+
+SRCNAM=tome2
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -40,9 +42,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -71,9 +70,9 @@ set -e
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf tome2-$SRCVER
-tar xvf $CWD/tome2-$SRCVER.tar.gz
-cd tome2-$SRCVER
+rm -rf $SRCNAM-$GITVER*
+tar xvf $CWD/$SRCNAM-$GITVER*.tar.gz
+cd $SRCNAM-$GITVER*
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
@@ -94,12 +93,14 @@ cd build
   make install DESTDIR=$PKG
 cd -
 
-find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
-  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF | cut -f 1 -d : | xargs strip \
+  --strip-unneeded 2> /dev/null
 
 install -m 0755 $CWD/tome.sh $PKG/usr/share/games/$PRGNAM/bin/tome.sh
 mkdir -p $PKG/usr/games
-ln -fs /usr/share/games/$PRGNAM/bin/tome.sh $PKG/usr/games/$PRGNAM
+ln -fs /usr/share/games/$PRGNAM/bin/tome.sh $PKG/usr/games/tome-ah-gcu
+ln -fs /usr/share/games/$PRGNAM/bin/tome.sh $PKG/usr/games/tome-ah-gtk2
+ln -fs /usr/share/games/$PRGNAM/bin/tome.sh $PKG/usr/games/tome-ah-x11
 
 find $PKG -name "delete.me" | xargs rm -f
 find $PKG -name ".cvsignore" | xargs rm -f
@@ -108,7 +109,7 @@ install -m 0644 -D $CWD/tome-ah.png $PKG/usr/share/pixmaps/tome-ah.png
 install -m 0644 -D $CWD/$PRGNAM.desktop $PKG/usr/share/applications/$PRGNAM.desktop
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a BUGS.txt changes.txt credits.txt $PKG/usr/share/games/$PRGNAM/lib/tome/help \
+cp -a doc/DEBUG.txt doc/RELEASE.txt doc/changes.txt doc/credits.txt $PKG/usr/share/games/$PRGNAM/lib/tome/help \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

@@ -2,9 +2,15 @@
 
 # Slackware build script for perl-GD
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20240819 bkw: add missing perl-File-Which dep. *derp*.
+# 20240814 bkw: update for v2.83.
+# 20230822 bkw: update for v2.78.
+# 20230531 bkw: update for v2.77.
+# 20230105 bkw: update for v2.76. 'make test' works OK now, uncommented.
 
 # 20211012 bkw: BUILD=2. Fix -current build, by commenting out
 # 'make test'. This is because of the (fairly) recent gd-2.3.3
@@ -24,7 +30,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=perl-GD
-VERSION=${VERSION:-2.73}
+VERSION=${VERSION:-2.83}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -45,20 +51,6 @@ fi
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
-
-if [ "$ARCH" = "i586" ]; then
-  SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "i686" ]; then
-  SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
-elif [ "$ARCH" = "x86_64" ]; then
-  SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
-else
-  SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
-fi
 
 set -e
 
@@ -95,14 +87,13 @@ perl Makefile.PL \
   INSTALLVENDORMAN3DIR=/usr/man/man3 \
   INSTALLVENDORMAN1DIR=/usr/man/man1
 make
-# make test # commented out until further notice!
+make test # used to fail in 2.73, works OK in 2.76
 make install DESTDIR=$PKG
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
-find $PKG/usr/man -type f -exec gzip -9 {} \;
-for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+gzip -9 $PKG/usr/man/man*/*
 
 find $PKG -name perllocal.pod \
   -o -name ".packlist" \

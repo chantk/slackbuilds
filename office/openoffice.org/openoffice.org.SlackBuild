@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # Slackware build script for openoffice.org
+
+# Originally written by Niki Kovacs <info@microlinux.fr)
+# Rewritten for slackbuilds.org by Ryan P.C. McQuen
 # Copyright 2018-2019 Donald Cooley South Haven, Indiana USA
 # With help from Ekin Akoglu to fix missing menu icons and script cleanup,
 # and a diff from Dominik Drobek to remove unnecessary RPM cruft.
 # Ryan P.C. McQuen | Everett, WA | ryanpcmcquen@member.fsf.org
-# Originally written by Niki Kovacs <info@microlinux.fr)
-#
-# Rewritten for slackbuilds.org by Ryan P.C. McQuen
+# Copyright 2023 Juan M. Lasca <juanmlasca@gmail.com>
+# Copyright 2024 Dimitris Zlatanidis Orestiada, Greece
+
 #
 # All rights reserved.
 #
@@ -32,8 +35,8 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=openoffice.org
 SRCNAM=openoffice
-VERSION=${VERSION:-4.1.7}
-BUILD_ID=${BUILD_ID:-9800}
+VERSION=${VERSION:-4.1.15}
+BUILD_ID=${BUILD_ID:-9813}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -49,7 +52,6 @@ fi
 
 # change this if you want to install a different language
 OOLANG=${OOLANG:-en-US}
-PKG_LANG=${OOLANG//-/_} # Leave this alone
 
 # Change source package name
 if [ "$ARCH" = "x86_64" ]; then
@@ -63,11 +65,8 @@ else
   PKGARCH="i586"
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
-  echo "$PRGNAM-${VERSION}_${PKG_LANG}-$PKGARCH-$BUILD$TAG.$PKGTYPE"
+  echo "$PRGNAM-${VERSION}-$PKGARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
 fi
 
@@ -127,12 +126,28 @@ cd $PKG/usr/bin/
   done
 cd -
 
+## Correct scripts so that they don't conflict with other soffice derivatives
+cd $PKG/opt/${SRCNAM}${SRCSHORT}/program
+  for FILE in \
+    sbase scalc sdraw simpress smath spadmin swriter unopkg; do
+    sed -i 's/soffice/open-soffice/' $FILE
+  done
+  ln -s soffice.bin open-soffice.bin
+cd -
+
+## By default, replace 'Raleigh' with 'Adwaita' as the default theme,
+## unless the option DEFAULT_TO_RALEIGH is set to 'YES'.
+## Changed based on comments by Petar Petrov
+if [ "$DEFAULT_TO_RALEIGH" = "YES" ]; then
+    patch -p0 $PKG/opt/${SRCNAM}${SRCSHORT}/program/soffice < $CWD/patches/01-gtk2_theme.patch;
+fi
+
 ## fix desktop files, so they can launch
-cat <<EOT > $PKG/usr/bin/${SRCNAM}4
+cat <<EOT > $PKG/usr/bin/${SRCNAM}${SRCSHORT}
 #!/bin/sh
 /opt/${SRCNAM}${SRCSHORT}/program/soffice "\$@"
 EOT
-chmod 755 $PKG/usr/bin/${SRCNAM}4
+chmod 755 $PKG/usr/bin/${SRCNAM}${SRCSHORT}
 
 ## desktop files!
 for APP in base calc draw impress math writer; do
@@ -141,6 +156,23 @@ done
 
 ## menu icons!
 cp -R $TMP/$SOURCEDIR/RPMS/desktop-integration/usr/share/icons $PKG/usr/share/
+
+# The following was adapted from a patch submitted by Petar Petrov
+# Do we want a submenu? For more info:
+# https://slackalaxy.com/2021/08/08/xfce-multilevel-menu/
+SUBMENU=${SUBMENU:-"YES"}
+if [ "$SUBMENU" = "YES" ]; then
+  # Use a separate "OpenOffice" menu entry within "Office"
+  mkdir -p $PKG/etc/xdg/menus/applications-merged
+  cp $CWD/submenus/openoffice.menu $PKG/etc/xdg/menus/applications-merged
+  
+  # Menu directory structure
+  mkdir -p $PKG/usr/share/desktop-directories
+  cp $CWD/submenus/openoffice.directory $PKG/usr/share/desktop-directories
+
+  # The category in the .desktop files is commented out to avoid duplication in menus
+  sed -i "s:Categories:#Categories:" $PKG/usr/share/applications/*.desktop
+fi
 
 ## Move docs to their expected locations
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
@@ -161,6 +193,7 @@ mv $TMP/$OOLANG $PKG/opt/${SRCNAM}${SRCSHORT}/lang/
 # Fix ownership and permissions and make the package
 chown -R root:root .
 find . -type d -exec chmod 755 {} \;
+find $PKG '(' -name "*.so" -o -name "*.so.*" ')' -exec chmod +x {} \;
 chmod -R u+rw,go+r-w,a-s .
 
-/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-${VERSION}_${PKG_LANG}-$PKGARCH-$BUILD$TAG.$PKGTYPE
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-${VERSION}-$PKGARCH-$BUILD$TAG.$PKGTYPE

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Slackware build script for sauerbraten
 
@@ -32,18 +32,20 @@
 # 1.0	26-DEC-2011 New SBo maintainer: Edward Koenig <kingbeowulf[at]gmail[dot]com>
 # 2.0   23-JUN-2013 new version, script clean up.
 # 3.0   18-APR-2021 new version, added copyright notice
+# 3.1   02-MAY-2023 updated version
+
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=sauerbraten
-VERSION=${VERSION:-2020_12_27}
+VERSION=${VERSION:-2020_12_29}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
+    i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
        *) ARCH=$( uname -m ) ;;
   esac
@@ -61,8 +63,8 @@ TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
-if [ "$ARCH" = "i486" ]; then
-  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+if [ "$ARCH" = "i586" ]; then
+  SLKCFLAGS="-O2 -march=i586 -mtune=i686"
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
 elif [ "$ARCH" = "x86_64" ]; then

@@ -7,7 +7,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=mailman
 VERSION=${VERSION:-2.1.39}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-4}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -73,7 +73,7 @@ mkdir -p $PKG
 install -d $PKG/$PREFIX -g mailman -o root -m 2775
 install -d $PKG/$VAR_PREFIX -g mailman -o root -m 2775
 
-set -e 
+set -e
 
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
@@ -117,12 +117,12 @@ chmod 0755 $PKG/etc/rc.d/rc.mailman.new
 
 mv $PKG/opt/mailman/Mailman/mm_cfg.py $PKG/opt/mailman/Mailman/mm_cfg.py.new
 
-mkdir -p $PKG/$PREFIX/doc/$PRGNAM-$VERSION
-mkdir -p $PKG/usr/doc
+mkdir -p $PKG/$PREFIX/doc/
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a ACKNOWLEDGMENTS BUGS FAQ NEWS README* STYLEGUIDE.txt TODO \
-  $PKG/$PREFIX/doc/$PRGNAM-$VERSION
-cat $CWD/$PRGNAM.SlackBuild > $PKG/$PREFIX/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
-( cd $PKG/usr/doc ; ln -s $PREFIX/doc/$PRGNAM-$VERSION )
+  $PKG/usr/doc/$PRGNAM-$VERSION
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+( cd $PKG/$PREFIX/doc ; ln -s /usr/doc/$PRGNAM-$VERSION )
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

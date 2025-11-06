@@ -3,7 +3,7 @@
 # Slackware build script for mysql-workbench
 
 # Originally written by Andre Geraldo Vieira <andre.geraldo@gmail.com>
-# Copyright 2013-2022 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
+# Copyright 2013-2025 Willy Sudiarto Raharjo <willysr@slackbuilds.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,14 +27,15 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=mysql-workbench
 PRGNAM2=mysql
-VERSION=${VERSION:-8.0.28}
-VERSION_MYSQL=8.0.28
+VERSION=${VERSION:-8.0.44}
+VERSION_MYSQL=8.4.7
 PRGNAM3=boost
-VERSION_BOOST=1_73_0
+VERSION_BOOST=1.87.0
+VERSION_BOOST_SRC=`echo $VERSION_BOOST | tr . _`
 PRGNAM4=mysql-connector-c++
-VERSION_MYSQL_CONNECTOR=8.0.28
+VERSION_MYSQL_CONNECTOR=9.5.0
 PRGNAM5=gdal
-VERSION_GDAL=3.2.2
+VERSION_GDAL=3.11.4
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -49,9 +50,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -82,8 +80,8 @@ mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 
 # Extract Boost
-rm -rf ${PRGNAM3}_${VERSION_BOOST}
-tar xvf $CWD/${PRGNAM3}_${VERSION_BOOST}.tar.bz2
+rm -rf ${PRGNAM3}_${VERSION_BOOST_SRC}
+tar xvf $CWD/${PRGNAM3}_${VERSION_BOOST_SRC}.tar.bz2
 
 # Building MySQL
 rm -rf $PRGNAM2-${VERSION_MYSQL}
@@ -92,9 +90,11 @@ cd $PRGNAM2-${VERSION_MYSQL}
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
+
+SLKCFLAGS+=" -Wno-error"
 
 mkdir -p build
 cd build
@@ -126,6 +126,15 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+# Thanks to Arch Linux
+sed -i \
+		-e '/cmake_policy/Is|[23]\.[.0-9]\+|3.12|' \
+		-e '/cmake_minimum_required/Is|[23]\.[.0-9]\+|3.12|' \
+		$(find "$TMP/$PRGNAM4-${VERSION_MYSQL_CONNECTOR}-src"/ -name 'CMakeLists.txt')
+
+# Fix for GCC 15
+patch -p1 < $CWD/0005-gcc-15.patch
+
 mkdir -p build
 cd build
 cmake \
@@ -156,22 +165,27 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS -fpermissive" \
-CPPFLAGS="-I/usr/include/mysql/server" \
-./configure \
-  --prefix=/usr \
-  --includedir=/usr/include/gdal \
-  --with-sqlite3 \
-  --libdir=/usr/lib${LIBDIRSUFFIX} \
-  --with-mysql="$TMP/install-bundle/usr/bin/mysql_config" \
-  --with-curl \
-  --without-jasper
+# Fix for newer poppler
+patch -p1 < $CWD/fix-build-with-poppler-25.10.0.patch
+
+mkdir -p build
+cd build
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DGDAL_USE_JASPER='OFF' \
+    -DGDAL_USE_MYSQL='OFF' \
+    -DBUILD_CSHARP_BINDINGS='FALSE' \
+	-DBUILD_JAVA_BINDINGS='FALSE' \
+	-DBUILD_PYTHON_BINDINGS='FALSE' \
+    -DCMAKE_BUILD_TYPE=Release ..
 
 make LD_LIBRARY_PATH="$TMP/install-bundle/usr/lib${LIBDIRSUFFIX}/"
 make LD_LIBRARY_PATH="$TMP/install-bundle/usr/lib${LIBDIRSUFFIX}/" DESTDIR="$TMP/install-bundle/" install
-
-cd ../
+cd ../../
 
 # Building mysql-workbench
 rm -rf $PRGNAM-community-$SRCVERSION
@@ -184,20 +198,12 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-# From Archlinux: GCC 7.x complains about an unsupported flag; it also
-# introduced some new warnings, remove '-Werror' for the build to complete
-sed -i 's|-Wno-deprecated-register||' ext/scintilla/gtk/CMakeLists.txt
-sed -i '/^set/s|-Werror -Wall|-Wall|' CMakeLists.txt
+sed -i '/^\s*set/s| -Werror||' CMakeLists.txt
+
+sed -i '/target_compile_options/s|PRIVATE|PRIVATE -fno-lto|' library/sql.parser/source/CMakeLists.txt
 
 # Patch from Ponce
 patch -p1 < $CWD/config_and_ifconfig_paths.patch
-
-# Big thanks to ARCH Linux for all these work.
-# GCC 7.x introduced some new warnings, remove '-Werror' for the build to complete
-sed -i '/^set/s|-Werror -Wall|-Wall|' CMakeLists.txt
-
-# GCC 7.x complains about unsupported flag
-sed -i 's|-Wno-deprecated-register||' ext/scintilla/gtk/CMakeLists.txt
 
 # disable stringop-truncation for GCC 8.x
 sed -i '/^set/s|-Wall|-Wall -Wno-stringop-truncation|' CMakeLists.txt
@@ -208,16 +214,27 @@ sed -i "/target_link_libraries/s|\\$|-L$TMP/install-bundle/usr/lib${LIBDIRSUFFIX
 # Fix boost 1.73
 patch -p1 < $CWD/boost-1.73.0.patch
 
-# Install antlr Java JAR
-cp $CWD/antlr-4.9.2-complete.jar $TMP/install-bundle/antlr-4.9.2-complete.jar
+patch -Np1 < $CWD/0003-include-list.patch
 
-sed -i 's|4.9.1|4.9.2|' CMakeLists.txt
+# Only apply this for python 3.12+
+PYTHONVER=$(python3 -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
+if [ $PYTHONVER != 3.9 ]; then
+  patch -p1 < $CWD/0003-swig-4-3.patch
+fi
+
+# Install antlr Java JAR
+cp $CWD/antlr-4.13.2-complete.jar $TMP/install-bundle/antlr-4.13.2-complete.jar
+
+sed -i 's|4.11.1|4.13.2|' CMakeLists.txt
+
+# patch for GCC 13.0
+patch -p1 < $CWD/gcc13.patch
 
 mkdir -p wb-build
 cd wb-build
 cmake \
   -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-  -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+  -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS -D_GLIBCXX_USE_CXX11_ABI=1" \
   -Wno-dev \
   -DCMAKE_INSTALL_PREFIX:PATH=/usr \
   -DCMAKE_CXX_FLAGS="-std=c++17" \
@@ -228,7 +245,9 @@ cmake \
   -DMySQLCppConn_INCLUDE_DIR="$TMP/install-bundle/usr/include/jdbc" \
   -DGDAL_INCLUDE_DIR="$TMP/install-bundle/usr/include" \
   -DGDAL_LIBRARY="$TMP/install-bundle/usr/lib${LIBDIRSUFFIX}/libgdal.so" \
-  -DWITH_ANTLR_JAR="$TMP/install-bundle/antlr-4.9.2-complete.jar" \
+  -DWITH_ANTLR_JAR="$TMP/install-bundle/antlr-4.13.0-complete.jar" \
+  -DUNIXODBC_CONFIG_PATH="/usr/bin/odbc_config" \
+  -DUNIXODBC_INCLUDE_DIRS="/usr/include/unixodbc" \
   -DUSE_BUNDLED_MYSQLDUMP=1 \
    ..
 
@@ -263,9 +282,13 @@ done
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
+# Fix ldconfig path
+sed -i "s|ldconfig|/sbin/ldconfig|" $PKG/usr/bin/mysql-workbench
+
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 mv AUTHORS *.txt $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+rm -rf $PKG/usr/share/doc
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

@@ -2,7 +2,7 @@
 
 # Slackware build script for xar
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -13,18 +13,34 @@
 # bother me.
 
 # The original google code project is dead, and so is mackyle's github
-# project. The Apple project might be deprecated, but it was last
-# updated in 2020, so it's at least not ancient history.
+# project. The Apple github project might be deprecated, but it's
+# still being updated (as of September 2024).
 
-# For some reason, gentoo and other distros want to give this the
-# version number "1.8.0.0.452". Dunno where the extra zeroes come
-# from. "xar --version" reports "1.8dev", the tarball's version
-# number is the SVN revision, 452...
+# For some reason, gentoo and other distros want to give this version
+# numbers like "1.8.0.0.452". Dunno where the extra zeroes come from.
+# "xar --version" reports "1.8dev", the tarball's version number
+# is the SVN revision (452, 498, etc).
+
+# 20241123 bkw: update for v501 (needed a new patch).
+# 20231118 bkw: update for v498.
+
+# 20230711 bkw: no script changes, just a note to myself: there's now
+# a 496 tag, and it won't compile either.
+
+# 20230106 bkw: apple quit hosting their own tarball, old URL is now
+# a redirect to a github generated one, script has to change to handle it.
+
+# 20221229 bkw: this is still being developed, code is at
+# https://github.com/apple-oss-distributions/xar/ but the latest tag
+# (494) won't compile, and I don't love this enough to spend time on
+# it right now. If it bothers you, fix it and send me a patch.
+
+# 20221229 bkw: BUILD=2, strip library (derp!)
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=xar
-VERSION=${VERSION:-1.8dev+452}
+VERSION=${VERSION:-1.8dev+501}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -42,7 +58,6 @@ if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   exit 0
 fi
 
-CWD=$(pwd)
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
@@ -68,23 +83,46 @@ SRCVER="$( echo $VERSION | cut -d+ -f2 )"
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf $PRGNAM-$SRCVER
-tar xvf $CWD/$PRGNAM-$SRCVER.tar.gz
-cd $PRGNAM-$SRCVER
+rm -rf $PRGNAM-$PRGNAM-$SRCVER
+tar xvf $CWD/$PRGNAM-$PRGNAM-$SRCVER.tar.gz
+cd $PRGNAM-$PRGNAM-$SRCVER
 chown -R root:root .
 find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
         \! -perm /111 -a \! -perm 644 -a -exec chmod 644 {} \+
 
 cd $PRGNAM
 
-# patches came from gentoo:
-# https://gitweb.gentoo.org/repo/gentoo.git/tree/app-arch/xar
-for i in $CWD/patches/*.patch; do
-  patch -p1 < $i
+# Most of these patches came from liguros:
+# https://gitlab.com/liguros/liguros-repo/-/tree/stable/app-arch/xar
+
+# 20241123 bkw: their xar_lib_archive_c.patch is *wrong*! It will
+# indeed let xar compile, but it won't let xar_fdopen_digest_verify()
+# work correctly (it would always return NULL, because fcntl() would
+# fail since there's no such thing as cmd #50 on Linux).
+
+# I added my own (hopefully) correct f_getpath_replacement.diff instead.
+# Note that nothing in the xar application itself ever calls
+# xar_fdopen_digest_verify(); it's part of the API for libxar, for
+# other software to use. So I haven't really tested the patch, though
+# did thoroughly test its fd2path() function.
+
+for i in $( cat $CWD/patches/series ); do
+  patch -p1 < $CWD/patches/$i
 done
+
+# This bit comes from liguros's xar-498.ebuild.
+sed -i 's/__APPLE__/__NO_APPLE__/' lib/hash.c lib/archive.h
+cp lib/*.h include
+
+# Make #include <xar/xar.h> include the one in the build dir, not
+# any system-wide one in /usr/include.
+mkdir include/xar
+ln -sf ../xar.h include/xar/xar.h
 
 # -I doesn't affect #include "blah.h".
 sed -i 's,"\(\(util\|filetree\)\.h\)",<\1>,' src/xar.c
+
+sed -i '/ext2fs\/ext2_fs/i #include <stdlib.h>' lib/ext2.c
 
 # xar executable, library, and includes. have to manually add
 # openssl's libs, and jigger the include path for <util.h> and
@@ -107,6 +145,7 @@ make
 make install DESTDIR=$PKG
 gzip $PKG/usr/man/man?/*
 rm -f $PKG/usr/lib*/*.la
+strip $PKG/usr/lib*/*.so*
 
 cd -
 

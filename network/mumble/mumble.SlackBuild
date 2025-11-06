@@ -27,7 +27,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=mumble
-VERSION=${VERSION:-1.4.230}
+VERSION=${VERSION:-1.5.735}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -46,9 +46,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -112,7 +109,6 @@ mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
 tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
-mv $PRGNAM-$VERSION.src $PRGNAM-$VERSION
 cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
@@ -130,13 +126,17 @@ cmake \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_INSTALL_MANDIR=/usr/man \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_C_STANDARD=99 \
+  -Dwarnings-as-errors=OFF \
+  -W no-dev \
   -Dclient=ON \
   -Dserver=OFF \
   -Dbundled-opus=OFF \
   -Dbundled-speex=OFF \
   -Dupdate=OFF \
   -Dbundle-qt-translations=OFF \
-  -Dice=OFF \
+  -Dwarnings-as-errors=OFF \
   -Dzeroconf=OFF \
   $BUILD_CELT \
   $BUILD_SPEECHD \
@@ -156,7 +156,7 @@ for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; r
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 (
 cd $TMP/$PRGNAM-$VERSION
-cp -a AUTHORS CHANGES CODE_OF_CONDUCT.md COMMIT_GUIDELINES.md LICENSE README.md SECURITY.md $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a CODE_OF_CONDUCT.md LICENSE README.md SECURITY.md docs/* $PKG/usr/doc/$PRGNAM-$VERSION
 )
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

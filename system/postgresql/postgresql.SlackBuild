@@ -24,10 +24,13 @@
 
 # Modified by the SlackBuilds.org Project
 
+# 20220301 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - strip pg_config binary (install-strip misses that one).
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=postgresql
-VERSION=${VERSION:-14.2}
+VERSION=${VERSION:-14.19}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -45,9 +48,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -61,11 +61,11 @@ OUTPUT=${OUTPUT:-/tmp}
 # For slackbuilds.org, assigned postgres uid/gid are 209/209
 # See http://slackbuilds.org/uid_gid.txt
 # Other popular choice is 26/26
-if ! grep ^postgres: /etc/group 2>&1 > /dev/null; then
+if ! grep ^postgres: /etc/group > /dev/null 2>&1 ; then
   echo "  You must have a postgres group to run this script."
   echo "    # groupadd -g $PG_GID postgres"
   exit 1
-elif ! grep ^postgres: /etc/passwd 2>&1 > /dev/null; then
+elif ! grep ^postgres: /etc/passwd > /dev/null 2>&1 ; then
   echo "  You must have a postgres user to run this script."
   echo "    # useradd -u $PG_UID -g $PG_GID -d /var/lib/pgsql postgres"
   exit 1
@@ -107,6 +107,7 @@ find -L . \
  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
 CFLAGS="$SLKCFLAGS" \
+PYTHON="/usr/bin/python3" \
 ./configure \
   --prefix=/usr/lib${LIBDIRSUFFIX}/$PRGNAM/$PG_VERSION \
   --sysconfdir=/etc/$PRGNAM/$PG_VERSION \
@@ -130,6 +131,9 @@ make
 make install-strip DESTDIR=$PKG
 make install-docs DESTDIR=$PKG
 
+# 20220414 bkw: this one binary wasn't getting stripped...
+strip $PKG/usr/lib${LIBDIRSUFFIX}/$PRGNAM/$PG_VERSION/bin/pg_config
+
 # create symlinks to shared library for other programs to link against
 ( cd $PKG/usr/lib${LIBDIRSUFFIX}
   for i in $(ls $PRGNAM/$PG_VERSION/lib/lib*.so*) ; do ln -sf $i ; done
@@ -152,7 +156,7 @@ make install-docs DESTDIR=$PKG
 
 PG_EXTENSIONS=${PG_EXTENSIONS:-"adminpack pgcrypto ltree xml2 postgres_fdw file_fdw hstore citext"}
 
-if [ "x$PG_EXTENSIONS" = "xALL" ];then
+if [ "$PG_EXTENSIONS" = "ALL" ];then
   cd $TMP/$PRGNAM-$VERSION/contrib
   make all
   make install-strip DESTDIR=$PKG

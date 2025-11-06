@@ -2,10 +2,10 @@
 
 # Slackware build script for escpr2
 
-# Copyright 2018-2020 Tim Dickson
+# Copyright 2018-2025 Tim Dickson
 # All rights reserved.
 #
-# thanks to Ruben Schuller for escpr slack build, which this is
+# thanks to Ruben Schuller for escpr slack build, which this was
 # heavily based on.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,15 +27,18 @@
 
 #note to self. paste list of supported models into first line of empty README.models
 #file. run sh ./fixrm to spread the model list evenly over as many lines as needed
-#also request upload of source to slackbuildsdirectlinks.
+#also upload source to slackbuildsdirectlinks, as epson keeps changing the url
+#of their own download link.
+#http://support.epson.net/linux/Printer/LSB_distribution_pages/en/escpr2.php
+#contains a link to the source near the bottom of the page
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=epson-inkjet-printer-escpr2
-VERSION=${VERSION:-1.1.29}
-EXTRABIT=1lsb3.2
+VERSION=${VERSION:-1.2.26}
+EXTRABIT=1
 TARNAM=$PRGNAM-$VERSION-$EXTRABIT.tar.gz
-BUILD=${BUILD:-2}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -47,22 +50,13 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-#lets get the source tarball from the rpm and clean up the bits we don't need
-rpm2tgz $PRGNAM-$VERSION-$EXTRABIT.src.rpm
-tar -xzf $PRGNAM-$VERSION-$EXTRABIT.src.tgz
-cp $PRGNAM-$VERSION-$EXTRABIT/$PRGNAM-$VERSION-$EXTRABIT.tar.gz ./
-rm $PRGNAM-$VERSION-$EXTRABIT.src.tgz
-rm -r $PRGNAM-$VERSION-$EXTRABIT
-
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
 fi
 
 TMP=${TMP:-/tmp/SBo}
+EXTRACTTMP=${TMP}/epson-inkjet-printer-escpr2-src
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
@@ -83,13 +77,23 @@ fi
 set -e
 
 rm -rf $PKG
-mkdir -p $TMP $PKG $OUTPUT
+mkdir -p $TMP $PKG $OUTPUT $EXTRACTTMP
+#lets get the source tarball from the rpm and clean up the bits we don't need
+cd $EXTRACTTMP
+rpm2tgz $CWD/$PRGNAM-$VERSION-$EXTRABIT.src.rpm
+tar -xzf $PRGNAM-$VERSION-$EXTRABIT.src.tgz
+#fix for dave and others whose rpm2tgz behaves differently. :-)
+if [ -e $PRGNAM-$VERSION-$EXTRABIT/$PRGNAM-$VERSION-$EXTRABIT.tar.gz ]; then
+  cp $PRGNAM-$VERSION-$EXTRABIT/$PRGNAM-$VERSION-$EXTRABIT.tar.gz ./
+fi
+rm -f $PRGNAM-$VERSION-$EXTRABIT.src.tgz
+rm -rf $PRGNAM-$VERSION-$EXTRABIT
+rm -f lsb-rpm.spec
 cd $TMP
 rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$TARNAM
-#we remove the tarnam as the original is an rpm
-#this keeps things tidy.
-rm $CWD/$TARNAM
+tar xvf $EXTRACTTMP/$TARNAM
+#lets remove our temp extraction directory
+rm -rf $EXTRACTTMP
 cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
@@ -98,7 +102,14 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-CFLAGS="$SLKCFLAGS" \
+#leave next few lines in as reminder how to test incase epson break their drivers for 32bit again
+BUGFIXED=yes
+if [ x`objdump -f escprlib/lib/libescpr2_32.a |grep ^architecture |cut -d' ' -f-2 |sort -u|grep "x86-64"|wc -l` = "x1" ]; then
+  BUGFIXED=no
+fi
+#next line added as slackware autocmake is higher than 1.15 so m4 files need regenerating for v>1.2.12
+autoreconf
+CFLAGS="$SLKCFLAGS -fpermissive" \
 CXXFLAGS="$SLKCFLAGS" \
 ./configure \
   --prefix=/usr \
@@ -117,7 +128,9 @@ find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | gr
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a $CWD/LICENCE.html COPYING COPYING.EPSON COPYING.LIB README INSTALL AUTHORS ChangeLog NEWS $PKG/usr/doc/$PRGNAM-$VERSION
+#fix ownership of licence file.
+cp -a $CWD/LICENCE.html COPYING COPYING.EPSON COPYING.LIB README AUTHORS ChangeLog NEWS $PKG/usr/doc/$PRGNAM-$VERSION
+chown root:root $PKG/usr/doc/$PRGNAM-$VERSION/LICENCE.html
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 rm -f $PKG/usr/lib*/*.la
@@ -128,3 +141,6 @@ cat $CWD/doinst.sh >$PKG/install/doinst.sh
 
 cd $PKG
 /sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE
+if [ "$BUGFIXED" = "no" ]; then
+  echo "32bit builds will fail as epson has supplied a 64bit object file labelled as 32bit"
+fi

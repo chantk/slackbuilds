@@ -2,7 +2,7 @@
 
 # Slackware build script for flite
 # Originally written by Martin Lefebvre (email removed)
-# Now maintained by B. Watson (yalhcru@gmail.com), original author is MIA.
+# Now maintained by B. Watson (urchlay@slackware.uk), original author is MIA.
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
 # 20210802 bkw: update for v2.2
@@ -144,6 +144,7 @@ done
 # "cd -", as they don't nest.
 ( cd doc
   # build the HTML docs.
+  sed -i -e "s|html/flite\ |html/flite_html |" -e "s|html/flite\;|html/flite_html;|" -e "s|html/flite/|html/flite_html/|" Makefile
   make $PRGNAM.html
   ( cd html
 

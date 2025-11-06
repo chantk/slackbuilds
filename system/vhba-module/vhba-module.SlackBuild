@@ -4,7 +4,8 @@
 
 # Copyright 2008-2009 Heinz Wiesinger, Amsterdam, The Netherlands
 # Copyright 2010-2012 Niels Horn, Rio de Janeiro, RJ, Brazil <niels.horn@gmail.com>
-# Copyright 2018-2022 Isaac Yu <isaacyu1@isaacyu1.com>
+# Copyright 2018-2024 Isaac Yu <isaacyu@protonmail.com>
+# Copyright 2025 S. S. Bolokanar <bolokanar@bulgarsociety.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,32 +28,31 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=vhba-module
-VERSION=${VERSION:-20211218}
+VERSION=${VERSION:-20250329}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
-# Setting ARCH is not supported (and the build crashes if ARCH is exported).
-unset ARCH
 case "$( uname -m )" in
-  i?86) SLKARCH=i586 ;;
-  arm*) SLKARCH=arm ;;
-     *) SLKARCH=$( uname -m ) ;;
+  i?86) ARCH=i586 ;;
+  arm*) ARCH=arm ;;
+     *) ARCH=$( uname -m ) ;;
 esac
+
+# Setting ARCH is not supported (and the build crashes if ARCH is exported).
+SLKARCH="$ARCH"
+unset ARCH
 
 KERNEL=${KERNEL:-$(uname -r)}
 PKGKERNEL=$(echo $KERNEL | tr - _)
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-${VERSION}_${PKGKERNEL}-$SLKARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
 fi
 
 TMP=${TMP:-/tmp/SBo}
-PKG=${PKG:-$TMP/package-$PRGNAM}
+PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
 set -e
@@ -77,15 +77,15 @@ make KERNELRELEASE=$KERNEL
 mkdir -p $PKG/lib/modules/$KERNEL/extra
 install -m 0644 vhba.ko $PKG/lib/modules/$KERNEL/extra/
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION"_"$KERNEL
 cp -a \
-  AUTHORS COPYING ChangeLog INSTALL NEWS README \
-  $PKG/usr/doc/$PRGNAM-$VERSION/
-cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+  AUTHORS COPYING ChangeLog README \
+  $PKG/usr/doc/$PRGNAM-$VERSION"_"$KERNEL/
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION"_"$KERNEL/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
-cat $CWD/doinst.sh > $PKG/install/doinst.sh
+sed "s%@KERNEL@%$KERNEL%" $CWD/doinst.sh > $PKG/install/doinst.sh
 
 cd $PKG
 /sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-${VERSION}_$PKGKERNEL-$SLKARCH-$BUILD$TAG.$PKGTYPE

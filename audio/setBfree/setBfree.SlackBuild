@@ -2,7 +2,7 @@
 
 # Slackware build script for setBfree
 
-# Copyright 2020  Johannes Schoepfer, Germany
+# Copyright 2020-2024  Johannes Schoepfer, Germany
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,7 +25,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=setBfree
-VERSION=${VERSION:-0.8.11}
+VERSION=${VERSION:-0.8.13}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -38,9 +38,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -75,43 +72,43 @@ cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} + -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} +
 
 patch -p0 < $CWD/libdir.patch
 
+export FONTFILE=/usr/share/fonts/TTF/DejaVuSans-Bold.ttf 
 make clean
-make \
-  PREFIX=/usr OPTIMIZATIONS="$SLKCFLAGS" \
-  FONTFILE=/usr/share/fonts/TTF/DejaVuSans-Bold.ttf
-make \
-  PREFIX=/usr DESTDIR=$PKG LIBDIR="lib$LIBDIRSUFFIX" \
-  FONTFILE=/usr/share/fonts/TTF/DejaVuSans-Bold.ttf \
-  install
+make PREFIX=/usr LIBDIR=lib$LIBDIRSUFFIX OPTIMIZATIONS="$SLKCFLAGS"
+make PREFIX=/usr LIBDIR=lib$LIBDIRSUFFIX DESTDIR=$PKG install
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/share/pixmaps
-cp doc/{$PRGNAM,x42-whirl}.png \
+cp doc/*.png \
   $PKG/usr/share/pixmaps/
+mkdir -p $PKG/usr/share/applications
+cp $CWD/{$PRGNAM,x42-whirl}.desktop $PKG/usr/share/applications
+
 mkdir -p $PKG/usr/man/man1
 cp doc/*.1 $PKG/usr/man/man1/
 # remove jboverdrive man page, https://github.com/pantherb/setBfree/issues/46
 rm $PKG/usr/man/man1/jboverdrive.1
 
-find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
-  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
-
-find $PKG/usr/man -type f -exec gzip -9 {} \;
+find $PKG/usr/man -type f -exec gzip -9 {} +
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 cp -a \
-  AUTHORS ChangeLog README.md doc/*.png \
+  AUTHORS ChangeLog COPYING README.md \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
 
 cd $PKG
 if [ "${SETCAP:-yes}" = "yes" ]; then

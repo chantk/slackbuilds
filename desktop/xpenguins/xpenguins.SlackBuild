@@ -2,9 +2,12 @@
 
 # Slackware build script for xpenguins
 # Originally written by Steven Pledger
-# Updated and now maintained by B. Watson <yalhcru@gmail.com>
+# Updated and now maintained by B. Watson <urchlay@slackware.uk>
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20240823 bkw: update for v3.2.3.
+# 20221229 bkw: BUILD=2, get rid of useless INSTALL from doc dir.
 
 # 20220207 bkw:
 # - take over maintenance.
@@ -20,7 +23,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=xpenguins
-VERSION=${VERSION:-3.2.1}
+VERSION=${VERSION:-3.2.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -93,7 +96,7 @@ done
 
 PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
 mkdir -p $PKGDOC
-cp -a AUTHORS COPYING INSTALL NEWS README $PKGDOC
+cp -a AUTHORS COPYING ChangeLog README $PKGDOC
 cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

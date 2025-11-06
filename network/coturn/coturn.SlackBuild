@@ -2,7 +2,7 @@
 
 # Slackware build script for coturn
 
-# Copyright 2020 Thomas Bourdon <thomas dot bourdon at halpanet dot org>
+# Copyright 2020 Thomas Bourdon <thomas.bourdon@halpanet.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -28,25 +28,13 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=coturn
-VERSION=${VERSION:-4.5.2}
+VERSION=${VERSION:-4.6.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 TURN_USER=${TURN_USER:-turnserver}
 TURN_GROUP=${TURN_GROUP:-turnserver}
-
-if ! grep -q ^$TURN_GROUP: /etc/group 2>/dev/null ; then
-        echo "    Error: TURN group ($TURN_GROUP) doesn't exist."
-        echo "    Try creating one with: groupadd -g 366 $TURN_GROUP"
-        exit 1
-fi
-
-if ! grep -q ^$TURN_USER: /etc/passwd 2>/dev/null ; then
-        echo "    Error: TURN user ($TURN_USER) doesn't exist."
-        echo "    Try creating one with: useradd -u 366 -g $TURN_GROUP -d /var/lib/turn -s /bin/bash $TURN_USER"
-        exit 1
-fi
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
@@ -62,6 +50,18 @@ fi
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
+fi
+
+if ! grep -q ^$TURN_GROUP: /etc/group 2>/dev/null ; then
+        echo "    Error: TURN group ($TURN_GROUP) doesn't exist."
+        echo "    Try creating one with: groupadd -g 366 $TURN_GROUP"
+        exit 1
+fi
+
+if ! grep -q ^$TURN_USER: /etc/passwd 2>/dev/null ; then
+        echo "    Error: TURN user ($TURN_USER) doesn't exist."
+        echo "    Try creating one with: useradd -u 366 -g $TURN_GROUP -d /var/lib/turn -s /bin/bash $TURN_USER"
+        exit 1
 fi
 
 TMP=${TMP:-/tmp/SBo}
@@ -88,7 +88,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.?z*
+tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
 cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
@@ -114,6 +114,7 @@ make install DESTDIR=$PKG
 
 sed 's%/usr/local%/usr/share/turnserver/examples%' $PKG/etc/turnserver.conf.default > $PKG/etc/turnserver.conf.new
 rm -f $PKG/etc/turnserver.conf.default
+cp -a examples/ca $PKG/usr/share/turnserver/examples
 
 mkdir -p $PKG/etc/{rc.d,logrotate.d}
 cat $CWD/rc.turnserver > $PKG/etc/rc.d/rc.turnserver.new
@@ -138,11 +139,11 @@ find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | gr
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a AUTHORS ChangeLog LICENSE* README* \
+cp -a ChangeLog LICENSE* README* \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
-find $PKG/{usr/doc,usr/share,usr/include,etc,var} -type f -exec chmod -x {} +
+find $PKG/{usr/doc,usr/man,usr/share,usr/include,etc,var} -type f -exec chmod -x {} +
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

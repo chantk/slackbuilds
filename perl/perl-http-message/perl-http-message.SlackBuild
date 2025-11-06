@@ -25,14 +25,14 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=perl-http-message
-VERSION=${VERSION:-6.11}
+VERSION=${VERSION:-6.46}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 if [ -z "$ARCH" ]; then
   case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
+    i?86) ARCH=i586 ;;
     arm*) ARCH=arm ;;
        *) ARCH=$( uname -m ) ;;
   esac
@@ -51,7 +51,7 @@ PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
 SRCNAM=HTTP-Message
-DOCFILES="Changes README"
+DOCFILES="Changes README.md LICENSE INSTALL CONTRIBUTORS CONTRIBUTING.md"
 
 set -e
 

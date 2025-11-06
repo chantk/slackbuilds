@@ -4,6 +4,7 @@
 
 # Copyright 2013-2017 Heiko Rosemann, Germany
 # Copyright 2019-2022 Andrew Clemons, Wellington, New Zealand
+# Copyright 2022-2025 Andrew Clemons, Tokyo, Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,34 +27,20 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=vuescan
-VERSION=${VERSION:-9.7.79}
+VERSION=${VERSION:-9.8.46}
 SRCVER=${SRCVER:-$(echo "$VERSION" | cut -d. -f-2 | sed 's/\.//g')}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
-ARCH=${ARCH:-$(uname -m)}
-case $ARCH in
-  i?86)
-    SOURCEFILE=vuex32$SRCVER.tgz
-    if [ ! -e "$SOURCEFILE" ] ; then
-      SOURCEFILE=vuex32-$VERSION.tgz
-    fi
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i586 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
 
-    ;;
-  x86_64)
-    SOURCEFILE=vuex64$SRCVER.tgz
-    if [ ! -e "$SOURCEFILE" ] ; then
-      SOURCEFILE=vuex64-$VERSION.tgz
-    fi
-    ;;
-  *)
-    echo "ARCH $ARCH is unsupported."; exit 1 ;;
-esac
-
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -62,6 +49,20 @@ fi
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
+
+if [ "$ARCH" = "x86_64" ]; then
+  SOURCEFILE=vuex64$SRCVER.tgz
+  if [ ! -e "$CWD/$SOURCEFILE" ] ; then
+    SOURCEFILE=vuex64-$VERSION.tgz
+  fi
+elif [ "$ARCH" = "aarch64" ]; then
+  SOURCEFILE=vuea64$SRCVER.tgz
+  if [ ! -e "$CWD/$SOURCEFILE" ] ; then
+    SOURCEFILE=vuea64-$VERSION.tgz
+  fi
+else
+  echo "ARCH $ARCH is unsupported."; exit 1
+fi
 
 set -e
 
@@ -74,10 +75,10 @@ cd $PRGNAM-$VERSION
 tar xvf $CWD/$SOURCEFILE
 chown -R root:root .
 find -L . \
- \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 -o -perm 511 \) \
- -exec chmod 755 {} \; -o \
- \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
- -exec chmod 644 {} \;
+ \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+  -o -perm 511 \) -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
 # Program does not need compiling, is a binary program
 
@@ -91,6 +92,10 @@ echo "#!/bin/sh" > $PKG/usr/bin/$PRGNAM
 echo "cd /opt/$PRGNAM" >> $PKG/usr/bin/$PRGNAM
 echo "./$PRGNAM" >> $PKG/usr/bin/$PRGNAM
 chmod +x $PKG/usr/bin/$PRGNAM
+
+if [ "$ARCH" = "aarch64" ]; then
+  patchelf --set-interpreter /lib64/ld-linux-aarch64.so.1 $PKG/opt/$PRGNAM/$PRGNAM
+fi
 
 # Include the SlackBuild script in the documentation directory
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION

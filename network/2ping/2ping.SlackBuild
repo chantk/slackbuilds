@@ -2,10 +2,14 @@
 
 # Slackware build script for 2ping
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
+# 20241012 bkw: BUILD=3
+# - always include wireshark stuff.
+# - update the optional deps in README (python3- prefixes).
+# 20220331 bkw: BUILD=2, add SlackBuild to doc dir.
 # 20210911 bkw: update for v4.5.1.
 # 20200805 bkw: update for v4.5.
 # 20191130 bkw: update for v4.3.
@@ -19,7 +23,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=2ping
 VERSION=${VERSION:-4.5.1}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-3}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -62,19 +66,21 @@ find -L .  -perm /111 -a \! -perm 755 -a -exec chmod 755 {} \+ -o \
 
 python3 setup.py install --root=$PKG
 
-# Include wireshark stuff, if we have a wireshark that can use it (built
-# with lua52). The lua script is for decoding, the .pcap file is a sample
-# packet capture (belongs in doc dir).
-if [ -x /usr/bin/wireshark ] && ldd /usr/bin/wireshark | fgrep -q lua5.2; then
-  mkdir -p $PKG/usr/lib$LIBDIRSUFFIX/wireshark/plugins
-  cp -a wireshark/*.lua $PKG/usr/lib$LIBDIRSUFFIX/wireshark/plugins
-fi
+# 20241012 bkw: always include the wireshark stuff. our wireshark uses
+# lua53 only now, and 2ping.lua works fine with it. If someone doesn't
+# have wireshark installed, *shrug*, this wates a few KB of disk
+# space, no harm done.
+mkdir -p $PKG/usr/lib$LIBDIRSUFFIX/wireshark/plugins
+cp -a wireshark/*.lua $PKG/usr/lib$LIBDIRSUFFIX/wireshark/plugins
 
 mkdir -p $PKG/usr/man/man1
 gzip -9c < doc/$PRGNAM.1 > $PKG/usr/man/man1/$PRGNAM.1.gz
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/wireshark
-cp -a README* COPYING* ChangeLog* doc/*.py doc/*.md $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a wireshark/*.pcap $PKG/usr/doc/$PRGNAM-$VERSION/wireshark
+
+PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKGDOC/wireshark
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
+cp -a README* COPYING* ChangeLog* doc/*.py doc/*.md $PKGDOC
+cp -a wireshark/*.pcap $PKGDOC/wireshark
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

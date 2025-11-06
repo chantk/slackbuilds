@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2014-2021 S. S. Bolokanar, Bulgaria <sbolokanov@abv.bg>
+# Copyright 2014-2021 S. S. Bolokanar, Bulgaria <bolokanar@bulgarsociety.org>
 #                     С. С. Болоканаръ, България
 # All rights reserved.
 #
@@ -35,8 +35,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=rhash
-VERSION=${VERSION:-1.4.2}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-1.4.6}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -55,11 +55,6 @@ if [ "$STATICLIB" = "yes" ]; then
   ENABLESTATICLIB="--enable-lib-static"
 fi
 
-if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
-  echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
-  exit 0
-fi
-
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
@@ -70,6 +65,11 @@ if [ -z "$ARCH" ]; then
     arm*) export ARCH=arm ;;
        *) export ARCH=$( uname -m ) ;;
   esac
+fi
+
+if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
+  echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
+  exit 0
 fi
 
 if [ "$ARCH" = "i586" ]; then
@@ -127,7 +127,7 @@ mv -v $PKG/etc/rhashrc $PKG/etc/rhashrc.new
 
 # Copy docs
 mkdir -pv $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a ChangeLog COPYING README.md INSTALL.md $PKG/usr/doc/$PRGNAM-$VERSION/
+cp -a ChangeLog COPYING README.md $PKG/usr/doc/$PRGNAM-$VERSION/
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 find $PKG/usr/man -type f -exec gzip -9 {} \;

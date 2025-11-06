@@ -2,7 +2,7 @@
 
 # Slackware build script for Blender
 
-# Copyright 2015-2022 Christoph Willing, Brisbane Australia
+# Copyright 2015-2025 Christoph Willing, Sydney Australia
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -22,10 +22,15 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20220322 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - make embree optional (makes it possible to build Blender on 32-bit,
+#   since embree is 64-bit-only).
+# - add patch to fix 32-bit compilation. (no longer needed)
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=Blender
-VERSION=${VERSION:-3.0.1}
+VERSION=${VERSION:-4.4.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -43,16 +48,13 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
 fi
 
 TMP=${TMP:-/tmp/SBo}
-PKG=$TMP/package-$SRCNAM
+PKG=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-/tmp}
 
 if [ "$ARCH" = "i586" ]; then
@@ -79,14 +81,16 @@ if [ -d /usr/include/cuda ]; then
   fi
 fi
 
-embree=""
-if [ -d /usr/include/embree3 ]; then
-  # If embree is installed, assume we want to use it
+embree="-DWITH_CYCLES_EMBREE=OFF"
+# If embree is installed, use it unless user says EMBREE=no.
+if [ -d /usr/include/embree3 -a "${EMBREE:-yes}" = "yes" ]; then
   embree="-DWITH_CYCLES_EMBREE=ON"
-  # However disable embree if requested by e.g. EMBREE=no
-  if [ ${EMBREE:-yes} != "yes" ]; then
-    embree="-DWITH_CYCLES_EMBREE=OFF"
-  fi
+fi
+
+openusd=""
+if [ -d opt/OpenUSD/bin ]; then
+  # Since OpenUSD is installed, assume we want to use it
+  openusd="-DUSD_INCLUDE_DIR:PATH=/opt/OpenUSD/include -DUSD_LIBRARY:PATH=/opt/OpenUSD/lib"
 fi
 
 set -e
@@ -100,15 +104,23 @@ cd $SRCNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} \+ -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
+
+sed -i -e '/#include "util\/windows.h"/a #include <system_error>' intern/cycles/util/thread.cpp
+sed -i -e '/#include <fstream>/a #include <cstdint>' extern/quadriflow/src/loader.cpp
+
+# Need CMAKE_POLICY_VERSION_MINIMUM=3.5 for -current
+if [ ! -x /usr/bin/gcc-11.* ]; then
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
+fi
 
 mkdir -p build
 cd build
   cmake ../ \
     -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
-    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS $(pkg-config --cflags-only-I python-$PYTHON_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DWITH_INSTALL_PORTABLE:BOOL=OFF \
     -DWITH_BUILDINFO:BOOL=ON \
@@ -122,11 +134,12 @@ cd build
     -DWITH_JACK:BOOL=ON \
     -DWITH_JACK_DYNLOAD:BOOL=ON \
     -DPYTHON_LIBPATH:PATH=/usr/lib${LIBDIRSUFFIX} \
+	$openusd \
     -DWITH_CODEC_SNDFILE:BOOL=ON \
     -DWITH_FFTW3:BOOL=ON \
     -DWITH_IMAGE_OPENJPEG:BOOL=ON \
-    -DWITH_SYSTEM_EIGEN3:BOOL=OFF \
-    -DWITH_SYSTEM_GLEW:BOOL=OFF \
+    -DWITH_SYSTEM_EIGEN3:BOOL=ON \
+    -DWITH_SYSTEM_GLEW:BOOL=ON \
     -DWITH_SYSTEM_LZO:BOOL=ON \
     -DWITH_MEM_JEMALLOC:BOOL=ON \
     -DWITH_MEM_VALGRIND:BOOL=ON \
@@ -136,6 +149,7 @@ cd build
     -DCMAKE_BUILD_TYPE=Release \
     $cuda \
     $embree \
+    -DWITH_CYCLES_OSL:BOOL=OFF \
     -DCMAKE_EXE_LINKER_FLAGS:STRING="-lboost_locale"
 
   make
@@ -156,10 +170,13 @@ EOF
   chmod 0755 $PKG/usr/bin/$bin
 done
 
-mkdir -p $PKG/usr/man/man1
-./doc/manpage/blender.1.py --blender build/bin/blender --output $PKG/usr/man/man1/blender.1
-find $PKG/usr/man -type f -exec gzip -9 {} \;
-for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+# Recent OSL breaks manpage generation
+if [ ! -e "/usr/lib$LIBDIRSUFFIX/liboslcomp.so" ]; then
+  mkdir -p $PKG/usr/man/man1
+  ./doc/manpage/blender.1.py --blender build/bin/blender --output $PKG/usr/man/man1/blender.1
+  find $PKG/usr/man -type f -exec gzip -9 {} \;
+  for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+fi
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 mv $PKG/usr/share/doc/$SRCNAM/*  $PKG/usr/doc/$PRGNAM-$VERSION/

@@ -6,14 +6,14 @@
 # customary to leave one space after the ':' except on otherwise blank lines.
 
        |-----handy-ruler------------------------------------------------------|
-roxterm: roxterm (VTE based Terminal Emulator)
+roxterm: roxterm (gtk terminal emulator)
 roxterm:
-roxterm: ROXTerm is a terminal emulator intended to provide similar features
-roxterm: to gnome-terminal, based on the same VTE library, but with a smaller
-roxterm: footprint and quicker start-up time. It achieves this by not using
-roxterm: the Gnome libraries and by using a separate applet to provide the
-roxterm: configuration GUI. It can be used as a ROX application, as the name
-roxterm: implies, or in any other X environment.
+roxterm: ROXTerm is a terminal emulator that uses the same VTE library as
+roxterm: gnome-terminal. Originally aimed at being a lightweight gtk terminal,
+roxterm: it has since grown in features and is now quite comparable to the
+roxterm: default GNOME/Xfce/Mate terminals. It is still a favorite among
+roxterm: "power" users due to its high configurability. The name comes from
+roxterm: the ROX desktop, although ROXTerm can be used anywhere.
 roxterm:
-roxterm: http://roxterm.sourceforge.net/
+roxterm:
 roxterm:

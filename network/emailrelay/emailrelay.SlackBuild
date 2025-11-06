@@ -2,7 +2,8 @@
 
 # Slackware build script for emailrelay
 
-# Copyright 2011,2013,2016-2021 Andrew Clemons, Wellington, New Zealand
+# Copyright 2011,2013,2016-2022 Andrew Clemons, Wellington New Zealand
+# Copyright 2022-2024 Andrew Clemons, Tokyo Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=emailrelay
-VERSION=${VERSION:-2.2}
+VERSION=${VERSION:-2.6}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -38,9 +39,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -70,7 +68,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION-src.tar.gz
+tar xvf $CWD/$PRGNAM-"$VERSION"-src.tar.gz
 cd $PRGNAM-$VERSION
 
 chown -R root:root .
@@ -92,7 +90,6 @@ CXXFLAGS="$SLKCFLAGS" \
   --disable-gui \
   --with-openssl \
   --without-mbedtls \
-  --disable-install-hook \
   --build=$ARCH-slackware-linux
 
 make
@@ -105,11 +102,13 @@ find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+rm $PKG/usr/doc/$PRGNAM-$VERSION/INSTALL
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/etc/rc.d/
 mv $PKG/usr/libexec/emailrelay/init/emailrelay $PKG/etc/rc.d/rc.emailrelay.new
 mv $PKG/etc/emailrelay.conf $PKG/etc/emailrelay.conf.new
+mv $PKG/etc/emailrelay.auth $PKG/etc/emailrelay.auth.new
 
 rm -rf $PKG/usr/libexec/emailrelay/init/
 rm -rf $PKG/etc/pam.d

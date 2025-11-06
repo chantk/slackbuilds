@@ -2,8 +2,8 @@
 
 # Slackware build script for qbittorrent
 
+# Copyright 2022 David O'Shaughnessy
 # Copyright 2019-2021 Donald Cooley South Haven, Indiana USA
-# Copyright 2009-2010 David Woodfall <dave@slackbuilds.org>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -23,11 +23,15 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 20230630 bkw: Modified by SlackBuilds.org, BUILD=2:
+# - BUILD needed to be bumped due to the .desktop file change.
+# - Install README.SBo with correct ownership.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=qbittorrent
-SRCNAM=qBittorrent
-VERSION=${VERSION:-4.3.1}
+#SRCNAM=qBittorrent
+VERSION=${VERSION:-4.6.7}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,9 +44,6 @@ if [ -z "$ARCH" ]; then
   esac
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -71,47 +72,39 @@ set -e
 rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
-rm -rf $SRCNAM-release-$VERSION
-tar xvf $CWD/$SRCNAM-release-$VERSION.tar.?z*
-cd $SRCNAM-release-$VERSION
+rm -rf $PRGNAM-$VERSION
+tar xvf $CWD/$PRGNAM-$VERSION.tar.xz
+cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
-  -o -perm 511 \) -exec chmod 755 {} \; -o \
+  -o -perm 511 \) -exec chmod 755 {} + -o \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
-  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} +
 
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS -std=c++14" \
-./configure \
-  --prefix=/usr \
-  --libdir=/usr/lib${LIBDIRSUFFIX} \
-  --sysconfdir=/etc \
-  --localstatedir=/var \
-  --mandir=/usr/man \
-  --infodir=/usr/info \
-  --docdir=/usr/doc/$PRGNAM-$VERSION \
-  --build=$ARCH-slackware-linux
+# Build graphical version by default
+gui="-DGUI=ON"; [[ "${GUI:-yes}" != "yes" ]] && gui="-DGUI=OFF"
 
-make
-make install INSTALL_ROOT=$PKG
-make clean
+cmake -B build -G "Ninja" \
+  -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+  -DCMAKE_INSTALL_PREFIX=/usr \
+  -DCMAKE_INSTALL_LIBDIR:PATH=lib${LIBDIRSUFFIX} \
+  -DCMAKE_INSTALL_MANDIR=/usr/man \
+  -DCMAKE_INSTALL_DOCDIR=/usr/doc/$PRGNAM-$VERSION \
+  -DCMAKE_BUILD_TYPE=Release \
+  $gui \
+  -DSYSTEMD=OFF
+cmake --build build
+DESTDIR=$PKG cmake --install build --strip
 
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
-./configure \
-  --prefix=/usr \
-  --libdir=/usr/lib${LIBDIRSUFFIX} \
-  --sysconfdir=/etc \
-  --localstatedir=/var \
-  --mandir=/usr/man \
-  --infodir=/usr/info \
-  --docdir=/usr/doc/$PRGNAM-$VERSION \
-  --disable-gui \
-  --build=$ARCH-slackware-linux
+# adjust .desktop file to be compliant with Slackware 15.0 supported
+# version of desktop spec (1.4) (SingleMainWindow was added to version
+# 1.5 Desktop Entry Specification).
+# https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html
+[[ "${GUI:-yes}" != "yes" ]] || sed -i '/^SingleMainWindow/d' $PKG/usr/share/applications/*.desktop
 
-make
-mv src/qbittorrent-nox $PKG/usr/bin
+# Don't ship .la files:
+rm -f $PKG/{,usr/}lib${LIBDIRSUFFIX}/*.la
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
@@ -122,10 +115,13 @@ for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; r
 mkdir -p $PKG/etc/rc.d
 cp $CWD/rc.qbittorrent-nox.new $PKG/etc/rc.d/.
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a AUTHORS Changelog NEWS TODO COPYING INSTALL README.md \
-    $CWD/README.SBo $PKG/usr/doc/$PRGNAM-$VERSION
-cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKGDOC
+cp -a AUTHORS Changelog COPYING COPYING.GPLv? README.md $PKGDOC
+# 20230630 bkw: use cat instead of "cp -a" to install files from $CWD,
+# there's no way to tell what the $CWD ownership/permission is.
+cat $CWD/README.SBo > $PKGDOC/README.SBo
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

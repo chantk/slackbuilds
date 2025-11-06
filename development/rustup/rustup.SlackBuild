@@ -3,6 +3,7 @@
 # Slackware build script for rustup
 
 # Copyright 2017-2021 Andrew Clemons, Wellington New Zealand
+# Copyright 2023-2025 Andrew Clemons, Tokyo Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -25,7 +26,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=rustup
-VERSION=${VERSION:-1.24.3}
+VERSION=${VERSION:-1.28.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -44,9 +45,6 @@ if [ -z "$ARCH" ]; then
   fi
 fi
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -58,15 +56,19 @@ OUTPUT=${OUTPUT:-/tmp}
 
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  CARGOTARGET="--target i586-unknown-linux-gnu"
+  LIBDIRSUFFIX=""
+  CARGOTARGET="--target $ARCH-unknown-linux-gnu"
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  CARGOTARGET="--target i686-unknown-linux-gnu"
-elif [ "$ARCH" = "x86_64" ]; then
+  LIBDIRSUFFIX=""
+  CARGOTARGET="--target $ARCH-unknown-linux-gnu"
+elif [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then
   SLKCFLAGS="-O2 -fPIC"
-  CARGOTARGET="--target x86_64-unknown-linux-gnu"
+  LIBDIRSUFFIX="64"
+  CARGOTARGET="--target $ARCH-unknown-linux-gnu"
 else
   SLKCFLAGS="-O2"
+  LIBDIRSUFFIX=""
   CARGOTARGET=""
 fi
 
@@ -79,11 +81,9 @@ rm -rf $PRGNAM-$VERSION
 tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
 cd $PRGNAM-$VERSION
 
-zcat $CWD/offline_build.diff.gz | patch -p1
-
 # build offline
 # configuration tells cargo to use the configured directory
-# for dependencies intead of downloading from crates.io
+# for dependencies instead of downloading from crates.io
 mkdir -p .cargo
 cat << EOF >> .cargo/config
 [source.crates-io]
@@ -102,17 +102,12 @@ mkdir vendor
   grep -h -A 3 "\[\[package\]\]" $(find ../ -maxdepth 1 -mindepth 1 -name Cargo.lock | tr '\n' ' ') | \
     sed 's/[[:space:]]*=[[:space:]]*/=/g;s/^--//;s/^\[\[/--\n[[/' | \
     awk 'BEGIN { RS = "--\n" ; FS="\n" } { print $2, $3, $4 }' | sed 's/"//g;s/name=//;s/ version=/=/' | \
-    grep 'source=' | sed 's/ source=.*$//' | sort -u | while read -r dep ; do
+    grep crates\.io-index | sed 's/ source=.*$//' | sort -u | while read -r dep ; do
 
     ver="$(printf "%s\n" "$dep" | cut -d= -f2)"
     dep="$(printf "%s\n" "$dep" | cut -d= -f1)"
 
-    if [ "$dep" = "home" ] ; then
-      tar xvf "$CWD/home-a243ee2fbee6022c57d56f5aa79aefe194eabe53.tar.gz"
-      mv home-a243ee2fbee6022c57d56f5aa79aefe194eabe53 home-0.5.3
-    else
-      tar xvf $CWD/$dep-$ver.crate
-    fi
+    tar xvf $CWD/$dep-$ver.crate
 
     touch $dep-$ver/.cargo-ok
 
@@ -129,11 +124,7 @@ mkdir vendor
       printf "    },\n"
       printf '    "package": "'
 
-      if [ "$dep" = "home" ] ; then
-        printf "%s\"\\n" "479b7f48df1046b51085dcc214350c0ca7a303d91ca17944c0977fb72cf6bbac"
-      else
-        sha256sum "$CWD/$dep-$ver.crate" | cut -f1 -d' ' | sed 's/$/"/'
-      fi
+      sha256sum "$CWD/$dep-$ver.crate" | cut -f1 -d' ' | sed 's/$/"/'
 
       printf "}\n"
     } > $dep-$ver/.cargo-checksum.json
@@ -147,26 +138,36 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
+export PATH="/opt/rust/bin:$PATH"
+if [ -z "$LD_LIBRARY_PATH" ]; then
+  export LD_LIBRARY_PATH="/opt/rust/lib$LIBDIRSUFFIX"
+else
+  export LD_LIBRARY_PATH="/opt/rust/lib$LIBDIRSUFFIX:$LD_LIBRARY_PATH"
+fi
+
 CARGO_HOME=.cargo \
-cargo build --release --features no-self-update $CARGOTARGET
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+cargo build --offline --release --features no-self-update $CARGOTARGET
 
 mkdir -p $PKG/usr/bin/
 
-find target -name rustup-init -exec install -m 755 {} $PKG/usr/bin/rustup \;
+find target -name rustup-init -exec install -m 755 {} $PKG/usr/bin/rustup-init \;
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
+ln -s $PKG/usr/bin/rustup-init rustup # so we can generate completions
+
 mkdir -p $PKG/usr/share/bash-completion/completions
-$PKG/usr/bin/rustup completions bash > $PKG/usr/share/bash-completion/completions/rustup
+./rustup completions bash > $PKG/usr/share/bash-completion/completions/rustup
 
 mkdir -p $PKG/usr/share/zsh/site-functions
-$PKG/usr/bin/rustup completions zsh > $PKG/usr/share/zsh/site-functions/_rustup
-
+./rustup completions zsh > $PKG/usr/share/zsh/site-functions/_rustup
 chmod 0644 $PKG/usr/share/zsh/site-functions/_rustup $PKG/usr/share/bash-completion/completions/rustup
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a LICENSE-APACHE LICENSE-MIT README.md $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a CHANGELOG.md LICENSE-APACHE LICENSE-MIT README.md $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

@@ -25,7 +25,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=zabbix_server
-VERSION=${VERSION:-4.4.7}
+VERSION=${VERSION:-7.0.13}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -40,9 +40,9 @@ fi
 
 PRGSHORT=zabbix
 
-DOCROOT=${DOCROOT:-/var/www/htdocs}
-PHPUSER=${PHPUSER:-root}
-PHPGROUP=${PHPGROUP:-apache}
+#DOCROOT=${DOCROOT:-/var/www/htdocs}
+#PHPUSER=${PHPUSER:-root}
+#PHPGROUP=${PHPGROUP:-apache}
 
 ZABBIXUSER=${ZABBIXUSER:-zabbix}
 ZABBIXGROUP=${ZABBIXGROUP:-zabbix}
@@ -103,6 +103,7 @@ find -L . \
 
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
+PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig:/usr/local/share/pkgconfig:/usr/lib64/pkgconfig:/usr/share/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/share/pkgconfig \
 ./configure \
   --prefix=/usr \
   --sysconfdir=/etc/zabbix \
@@ -115,10 +116,18 @@ CXXFLAGS="$SLKCFLAGS" \
   --with-mysql \
   --with-libcurl \
   --with-net-snmp \
-  --with-ssh2 \
+  --with-ssh \
   --with-ldap \
-  --with-ipv6 \
+  --enable-ipv6 \
   --with-libxml2 \
+  --with-openssl \
+  --enable-ipv6 \
+  --with-unixodbc \
+  --with-libpcre2 \
+  --with-zlib \
+  --with-libpthread \
+  --with-libevent \
+  --with-iconv \
   --build=$ARCH-slackware-linux
 
 make
@@ -129,11 +138,6 @@ find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
 
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
-
-# Install "frontend" to $DOCROOT/zabbix
-mkdir -p $PKG/$DOCROOT/$PRGSHORT
-cp -a frontends/php/* $PKG/$DOCROOT/$PRGSHORT/
-chown -R $PHPUSER:$PHPGROUP $PKG/$DOCROOT/$PRGSHORT
 
 # Database scripts
 mkdir -p $PKG/usr/share/$PRGNAM/database/mysql
@@ -155,7 +159,11 @@ sed -e "s,# PidFile=/tmp/,PidFile=/var/run/$PRGSHORT/," \
     -e "s,# DBSocket=/tmp/,DBSocket=/var/run/mysql/," \
     -e "s,LogFile=/tmp/,LogFile=/var/log/$PRGSHORT/," \
     $PKG/etc/$PRGSHORT/$PRGNAM.conf > $PKG/etc/$PRGSHORT/$PRGNAM.conf.new
-rm -f $PKG/etc/$PRGSHORT/$PRGNAM.conf
+rm -f $PKG/etc/$PRGSHORT/$PRGNAM.conf 
+rm -rf $PKG/etc/$PRGSHORT/$PRGNAM.conf.d
+rm -rf $PKG/etc/$PRGSHORT/alertscripts/
+rm -rf $PKG/etc/$PRGSHORT/externalscripts/
+
 
 # Init script
 mkdir -p $PKG/etc/rc.d
@@ -163,7 +171,7 @@ cat $CWD/rc.$PRGNAM > $PKG/etc/rc.d/rc.$PRGNAM.new
 
 # Documentation
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a AUTHORS COPYING ChangeLog INSTALL NEWS README $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a AUTHORS COPYING ChangeLog NEWS README $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 cat $CWD/README.SLACKWARE > $PKG/usr/doc/$PRGNAM-$VERSION/README.SLACKWARE
 

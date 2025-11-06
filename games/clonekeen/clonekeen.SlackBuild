@@ -2,15 +2,17 @@
 
 # Slackware build script for clonekeen
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20230108 bkw: BUILD=3, update .desktop file.
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=clonekeen
 VERSION=${VERSION:-8.4}
-BUILD=${BUILD:-2}
+BUILD=${BUILD:-3}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 

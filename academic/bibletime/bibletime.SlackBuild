@@ -27,13 +27,16 @@
 
 # Modified by Robert Delahunt [twinreverb[at]puresimplicity.net
 # Modified 2018/19/20 by Tim Dickson (dickson.tim@googlemail.com)
-# Modified 20200918 by B. Watson <yalhcru@gmail.com>
+# Modified 20200918 by B. Watson <urchlay@slackware.uk>
+# Modified 20220412 by Tim Dickson (dickson.tim@googlemail.com)
+# updated for v3.0.3 and fix doc location by Tim Dickson (dickson.tim@googlemail.com)
+# updated to v3.1.1  20250406 by Tim Dickson (dickson.tim@googlemail.com)
 
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=bibletime
-VERSION=${VERSION:-3.0}
-BUILD=${BUILD:-2}
+VERSION=${VERSION:-3.1.1}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -80,14 +83,8 @@ rm -rf $PRGNAM-$VERSION
 tar -xJvf $CWD/$PRGNAM-$VERSION.tar.xz
 cd $PRGNAM-$VERSION
 
-#we need to patch the cmake file to skip tests as they fail at the moment
-#hopefully they will be fixed in 3.0.1
-
-sed -i "/BTTests/s/^/#/" cmake/BTApplication.cmake
-
 mkdir -p build
 cd build
-  export "PATH=/opt/cmake-202x/bin:$PATH"
   cmake \
     -Wno-dev \
     -DCMAKE_BUILD_TYPE=Release \
@@ -95,6 +92,7 @@ cd build
     -DCMAKE_SKIP_RPATH:BOOL=ON \
     -DCMAKE_C_FLAGS="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS="$SLKCFLAGS" \
+    -DBT_DOCDIR="doc/$PRGNAM-$VERSION" \
     -DLIB_SUFFIX=$LIBDIRSUFFIX .. 
   make
   make install DESTDIR=$PKG
@@ -106,7 +104,7 @@ find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a ChangeLog LICENSE README.md $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a LICENSE README.md $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 find $PKG/usr/doc/$PRGNAM-$VERSION -type f -exec chmod 644 {} \;
 

@@ -2,10 +2,12 @@
 
 # Slackware build script for commandergenius
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
+# 20240912 bkw: updated for 3.5.1
+# 20230111 bkw: updated for 3.2.0
 # 20211021 bkw: updated for 3.0.8
 # 20210310 bkw: updated for 2.7.7
 # 20201224 bkw: updated for 2.7.3
@@ -35,7 +37,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=commandergenius
-VERSION=${VERSION:-3.0.8}
+VERSION=${VERSION:-3.5.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}

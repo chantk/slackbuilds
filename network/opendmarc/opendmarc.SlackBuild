@@ -25,7 +25,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=opendmarc
-VERSION=${VERSION:-1.4.1.1}
+VERSION=${VERSION:-1.4.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -114,6 +114,7 @@ find -L . \
 for i in $CWD/patches/* ; do
   case $i in
     */z04_moreHeadersFailureReportVsBeta1.patch) : ;;
+    */pull178.diff) : ;;
     *) patch -p1 <$i ;;
   esac
 done
@@ -136,6 +137,8 @@ CXXFLAGS="$SLKCFLAGS" \
 
 make
 make install DESTDIR=$PKG
+
+rm -f $PKG/{,usr/}lib${LIBDIRSUFFIX}/*.la
 
 # Install init script
 install -D -m0755 -oroot -groot contrib/init/generic/$PRGNAM $PKG/etc/rc.d/rc.$PRGNAM.new

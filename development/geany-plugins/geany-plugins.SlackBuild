@@ -2,6 +2,10 @@
 
 # Slackware build script for Geany Plugins
 
+# Copyright 2022-2025 ilmich < ardutu at gmail dot com >
+
+# Previous maintainer(s):
+# Ryan S. Northrup | Reno, NV    | northrup@yellowapple.us
 # Ryan P.C. McQuen | Everett, WA | ryanpcmcquen@member.fsf.org
 
 # Copyright 2010-2013 James Geboski <jgeboski@gmail.com>
@@ -33,8 +37,8 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=geany-plugins
-VERSION=${VERSION:-1.36.0}
-BUILD=${BUILD:-3}
+VERSION=${VERSION:-2.1}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -84,9 +88,9 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \+
 
-CFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS -fpermissive" \
 CXXFLAGS="$SLKCFLAGS" \
-./autogen.sh \
+./configure \
   --prefix=/usr \
   --libdir=/usr/lib${LIBDIRSUFFIX} \
   --sysconfdir=/etc \
@@ -94,8 +98,7 @@ CXXFLAGS="$SLKCFLAGS" \
   --mandir=/usr/man \
   --docdir=/usr/doc/$PRGNAM-$VERSION \
   --disable-static \
-  --disable-workbench \
-  --disable-gitchangebar \
+  --disable-updatechecker \
   --build=$ARCH-slackware-linux
 
 make
@@ -103,7 +106,7 @@ make install-strip DESTDIR=$PKG
 
 PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
 mkdir -p $PKGDOC
-cp -a HACKING MAINTAINERS NEWS README $PKGDOC
+cp -a NEWS README $PKGDOC
 cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 # 20220308 bkw: bunch of placeholder NEWS and ChangeLog files:

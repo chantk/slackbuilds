@@ -5,7 +5,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=zita-resampler
-VERSION=${VERSION:-1.6.2}
+VERSION=${VERSION:-1.11.2}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -50,7 +50,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION
-tar xvf $CWD/$PRGNAM-$VERSION.tar.bz2
+tar xvf $CWD/$PRGNAM-$VERSION.tar.xz
 cd $PRGNAM-$VERSION
 chown -R root:root .
 find -L . \
@@ -64,6 +64,11 @@ sed -e '/native/d' \
       -e 's/ldconfig/& -N $(DESTDIR)\/$(LIBDIR)/' \
       -i source/Makefile
 sed -e 's|\ $(BINDIR)|\ $(DESTDIR)$(BINDIR)|' apps/Makefile
+
+# Thanks to altlinux
+if [ "$ARCH" = "i586" ] || [ "$ARCH" = "i686" ]; then
+  sed -e '/^CPPFLAGS += -DENABLE_SSE2/d' -i source/Makefile
+fi
 
 make -C source
 ln -sv lib$PRGNAM.so.$VERSION source/lib$PRGNAM.so

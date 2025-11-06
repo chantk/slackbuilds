@@ -2,9 +2,20 @@
 
 # Slackware build script for authbind
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20230103 bkw: Note to self: There is an authbind_2.1.3.tar.gz
+# available on Debian's download server, but there are no code changes
+# between 2.1.2 and 2.1.3. The only differences are in the Debian
+# packaging stuff (debian/rules and debian/changelog), which we don't
+# use.
+
+# 20250618 bkw: Addendum to the above: 2.2.0 is the same. The
+# install and install_man targets in the Makefile have changed
+# slightly; all the other changes are in the debian/ dir which
+# we don't use.
 
 cd $(dirname $0) ; CWD=$(pwd)
 

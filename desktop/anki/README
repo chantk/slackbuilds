@@ -8,5 +8,4 @@ from Anki. Since it is content-agnostic and supports images, audio,
 videos and scientific markup (via LaTeX), the possibilities are
 endless.
 
-mpv is recommended for video play-back, but mplayer (included in 
-Slackware by default) can be used instead.
+This binary distribution of Anki includes PyQt6, AQT, and Protobuf.

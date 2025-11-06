@@ -3,9 +3,11 @@
 # Slackware build script for doclifter
 
 # Originally written 2015 Didier Spaier Paris, France
-# Now maintained by B. Watson (yalhcru@gmail.com)
+# Now maintained by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
+
+# 20240312 bkw: update for v2.21.
 
 # 20220110 bkw:
 # - take over maintenance.
@@ -18,7 +20,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=doclifter
-VERSION=${VERSION:-2.20}
+VERSION=${VERSION:-2.21}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}

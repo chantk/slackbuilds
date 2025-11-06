@@ -2,11 +2,15 @@
 
 # Slackware build script for rmac
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
 # Upstream doesn't do source release tarballs, see git2targz.sh.
+
+# 20230103 bkw:
+# - update for v2.2.14_20221221.
+# - convert rst doc to html.
 
 # 20210907 bkw: update for v2.1.12_20210820.
 # 20180922 bkw:
@@ -15,7 +19,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=rmac
-VERSION=${VERSION:-2.1.12_20210820}
+VERSION=${VERSION:-2.2.14_20221221}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -78,7 +82,7 @@ install -s -m0755 $PRGNAM $PKG/usr/bin
 # ...and converted to *nix \n line endings.
 tar xvf $CWD/madmac-examples.tar.xz
 cd madmac-examples
-chown root.root *
+chown root:root *
 chmod 644 *
 mkdir -p $PKG/usr/share/$PRGNAM/examples
 mv * $PKG/usr/share/$PRGNAM/examples
@@ -90,9 +94,10 @@ cd -
 mkdir -p $PKG/usr/man/man1
 gzip -9c < $CWD/$PRGNAM.1 > $PKG/usr/man/man1/$PRGNAM.1.gz
 
+# rst2html is part of Slackware now, use it.
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 ln -s ../../share/$PRGNAM/examples $PKG/usr/doc/$PRGNAM-$VERSION/examples
-cp -a docs/* $PKG/usr/doc/$PRGNAM-$VERSION
+rst2html.py docs/rmac.rst > $PKG/usr/doc/$PRGNAM-$VERSION/rmac.html
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install

@@ -3,6 +3,7 @@
 # Slackware build script for prosody-mod-filter-chatstates
 
 # Copyright 2016-2018 Andrew Clemons, Wellington, New Zealand
+# Copyright 2022 Andrew Clemons, Tokyo Japan
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,9 +27,9 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=prosody-mod-filter-chatstates
 MDLNAM=$(echo $PRGNAM | sed 's/prosody-//' | tr '-' '_')
-VERSION=${VERSION:-hg1873}
-REVISION=${REVISION:-9283a6bcf512}
-BUILD=${BUILD:-1}
+VERSION=${VERSION:-hg6058}
+REVISION=${REVISION:-b6c17530a8fb}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -82,7 +83,7 @@ cp -a $MDLNAM $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
 mv \
-  $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/$MDLNAM/README.markdown \
+  $PKG/usr/lib$LIBDIRSUFFIX/prosody/modules/$MDLNAM/README.md \
   $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 

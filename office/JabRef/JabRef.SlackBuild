@@ -27,10 +27,23 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=JabRef
-VERSION=${VERSION:-5.5}
+VERSION=${VERSION:-5.15}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
+DEBBUILD=${DEBBUILD:-1}
+
+TMP=${TMP:-/tmp/SBo}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i586 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
 
 # If the variable PRINT_PACKAGE_NAME is set, then this script will report what
 # the name of the created package would be, and then exit. This information
@@ -40,19 +53,21 @@ if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   exit 0
 fi
 
-TMP=${TMP:-/tmp/SBo}
-PKG=$TMP/package-$PRGNAM
-OUTPUT=${OUTPUT:-/tmp}
-
-ARCH=${ARCH:-noarch}
-DEBARCH=amd64
+# Upstream has binary support for x86_64
+if [ "$ARCH" = "x86_64" ]; then
+    DEBARCH="amd64"
+else
+    echo "Sorry, binary is available for x86_64 only."
+    exit 1
+fi
 
 set -e
 
 rm -rf "$PKG"
 mkdir -p "$TMP" "$PKG" "$OUTPUT"
 cd "$PKG"
-ar p "$CWD"/${PRGNAM,,}_"$VERSION"-"$BUILD"_"$DEBARCH".deb data.tar.xz | tar xJv
+ar p "$CWD"/${PRGNAM,,}_"$VERSION"_"$DEBARCH".deb data.tar.xz | tar xJv
+#ar p "$CWD"/${PRGNAM,,}_"$VERSION"_"$DEBARCH".deb data.tar.zst | tar xv --zstd
 
 # permissions
 chown -R root:root .
@@ -67,15 +82,17 @@ find "$PKG" -print0 | xargs -0 file | grep -e "executable" -e "shared object" | 
 
 # create a symlink for program
 mkdir -p "$PKG"/usr/bin
-ln -s /opt/${PRGNAM,,}/bin/$PRGNAM "$PKG"/usr/bin/$PRGNAM
+ln -s ../../opt/${PRGNAM,,}/bin/$PRGNAM "$PKG"/usr/bin/$PRGNAM
 
 # desktop and icon
 install -D -m 0644 opt/${PRGNAM,,}/lib/${PRGNAM,,}-$PRGNAM.desktop -t "$PKG"/usr/share/applications
 install -D -m 0644 opt/${PRGNAM,,}/lib/$PRGNAM.png -t "$PKG"/usr/share/pixmaps
 # docs
 install -D -m 0644 opt/${PRGNAM,,}/share/doc/* "$CWD"/$PRGNAM.SlackBuild -t "$PKG"/usr/doc/$PRGNAM-"$VERSION"
-# package files
-install -D -m 0644 "$CWD"/slack-desc "$CWD"/doinst.sh -t "$PKG"/install
 
-cd "$PKG"
-/sbin/makepkg -l y -c n "$OUTPUT"/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
+
+cd $PKG
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

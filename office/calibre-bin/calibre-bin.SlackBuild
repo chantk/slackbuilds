@@ -2,8 +2,11 @@
 
 # Slackware build script for calibre-bin
 
-# Copyright 2019-2021, Alexander Verbovetsky, Moscow, Russia
+# Copyright 2019-2024, Alexander Verbovetsky, Moscow, Russia
 # All rights reserved.
+#
+# New Maintainer:
+# Edward W. Koenig, Vancouver WA, USA <kingbeowulf@linuxgalaxy.org>
 #
 # Redistribution and use of this script, with or without modification, is
 # permitted provided that the following conditions are met:
@@ -25,7 +28,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=calibre-bin
-VERSION=${VERSION:-5.15.0}
+VERSION=${VERSION:-7.16.0}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -35,13 +38,11 @@ if [ -z "$ARCH" ]; then
 fi
 
 case "$ARCH" in
-  i?86) ARCH=i686 ;;
+  i?86) echo "Support for 32bit CPUs has been dropped because Qt 6 does not support them"
+        exit 1 ;;
   arm*) ARCH=arm ;;
 esac
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
@@ -66,12 +67,18 @@ rm -r usr/share/{desktop-directories,mime/!(packages)}
 shopt -u extglob
 rm -f usr/share/applications/mimeinfo.cache
 
+sed -i "s|$PKG||g" usr/share/bash-completion/completions/ebook-convert
+
 cd usr/bin
 for f in $(find . -maxdepth 1 -type l); do
   ln -sf "/opt/calibre/${f:2}" .
 done
 rm calibre-uninstall
 cd ../..
+
+find -L opt/calibre/plugins -type f -name "*.so" -exec chmod 755 {} \;
+find -L opt/calibre/lib/calibre-extensions \
+  -type f -name "*.so" -exec chmod 755 {} \;
 
 chown -R root:root .
 find -L . \

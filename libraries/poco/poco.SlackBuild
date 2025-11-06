@@ -2,7 +2,7 @@
 
 # Slackware build script for poco
 
-# Copyright 2014-2019  Dimitris Zlatanidis  Orestiada, Greece
+# Copyright 2014-2022  Dimitris Zlatanidis  Orestiada, Greece
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -22,12 +22,14 @@
 #  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# 29-DEC-2022: new maintainer, Edward W. Koenig (kingbeowulf)
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=poco
-VERSION=${VERSION:-1.9.4}
+VERSION=${VERSION:-1.14.1}
 EDITION=all
-BUILD=${BUILD:-2}
+BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -45,6 +47,13 @@ fi
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0
+fi
+
+# Optionally disable bundles libs in favor of Slackware's versions 
+if [ ${BUNDLE:-no} = "no" ]; then
+  NOBUNDLE="-DPOCO_UNBUNDLED=ON"
+else
+  NOBUNDLE=""
 fi
 
 TMP=${TMP:-/tmp/SBo}
@@ -71,7 +80,7 @@ rm -rf $PKG
 mkdir -p $TMP $PKG $OUTPUT
 cd $TMP
 rm -rf $PRGNAM-$VERSION-$EDITION
-tar xvf $CWD/$PRGNAM-$VERSION-$EDITION.tar.gz
+tar xvf $CWD/$PRGNAM-$VERSION-$EDITION.tar.bz2
 cd $PRGNAM-$VERSION-$EDITION
 chown -R root:root .
 find -L . \
@@ -80,18 +89,21 @@ find -L . \
  \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
   -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
 
-if [ "$ARCH" = "x86_64" ]; then
-    patch -p1 < $CWD/poco_x64.patch
-fi
+# Slackware ships with MariaDB not MySQL, patch from Arch Linux
+patch -p1 < $CWD/poco_mariadb.patch
 
-./configure \
-  --prefix=/usr \
-  --no-tests \
-  --no-samples \
-  --shared
-
-make
-make install DESTDIR=$PKG
+mkdir -p cmake-build
+cd cmake-build
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    $NOBUNDLE \
+    -DCMAKE_BUILD_TYPE=Release ..
+    
+  make
+  make install DESTDIR=$PKG
+cd ..
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
@@ -102,7 +114,7 @@ find $PKG -name perllocal.pod \
   | xargs rm -f
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a CHANGELOG CONTRIBUTORS NEWS LICENSE VERSION README $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a CHANGELOG CONTRIBUTORS LICENSE MANIFEST VERSION README $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
 
 rm -f $PKG/usr/lib*/*.la

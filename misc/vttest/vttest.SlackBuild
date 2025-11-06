@@ -2,10 +2,16 @@
 
 # Slackware build script for vttest
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
+# 20250122 bkw: update for 2.7.20241208.
+# 20240808 bkw: update for 2.7.20240708.
+# 20240314 bkw: update for 2.7.20240218.
+# 20231120 bkw: update for 2.7.20230924.
+# 20230908 bkw: update for 2.7.20230201.
+# 20230103 bkw: update for 2.7.20221229.
 # 20210220 bkw: update for 2.7.20210210.
 # 20201025 bkw: update for 2.7.20200920.
 # 20200316 bkw: update for 2.7.20200303.
@@ -16,7 +22,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=vttest
-VERSION=${VERSION:-2.7.20210210}
+VERSION=${VERSION:-2.7.20241208}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -108,9 +114,11 @@ make install DESTDIR=$PKG
 strip $PKG/usr/bin/$PRGNAM
 gzip -9 $PKG/usr/man/man1/$PRGNAM.1
 
-mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cp -a BUGS CHANGES COPYING MANIFEST README $PKG/usr/doc/$PRGNAM-$VERSION
-cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+PKGDOC=$PKG/usr/doc/$PRGNAM-$VERSION
+mkdir -p $PKGDOC
+cp -a CHANGES COPYING MANIFEST README $PKGDOC
+[ -e BUGS ] && cp -a BUGS $PKGDOC
+cat $CWD/$PRGNAM.SlackBuild > $PKGDOC/$PRGNAM.SlackBuild
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc

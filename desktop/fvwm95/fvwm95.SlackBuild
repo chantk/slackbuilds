@@ -83,6 +83,8 @@ find -L . \
 
 # Apply patch to make compilation possible
 patch -p1 < $CWD/fvwm95.patch
+# Apply patch to repair FvwmTaskbar 06/2022
+patch -p1 < $CWD/fvwm95.new.patch
 
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
@@ -107,7 +109,7 @@ mv $PKG/usr/man/man1/xpmroot.1 $PKG/usr/man/man1/xpmroot95.1
 
 # rename manpages
 for m in $PKG/usr/man/man1/Fvwm* ; do
-  mv $m `echo $m | sed -r 's/Fvwm/Fvwm95/'`
+  mv $m $( echo $m | sed -r 's/Fvwm/Fvwm95/' )
 done
 
 find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \

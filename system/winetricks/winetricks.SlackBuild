@@ -1,10 +1,13 @@
 #!/bin/bash
+
 # Slackware build script for winetricks
 # Copyright 2017-2019 Donald Cooley South Haven, Indiana USA
+# Copyright 2022-2023 Isaac Yu <isaacyu@protonmail.com>
 
 # Ryan P.C. McQuen | Everett, WA | ryanpcmcquen@member.fsf.org
 
 # Copyright 2011 by Giovanne Castro, Campinas, Sao Paulo, Brazil <giovannefc@ig.com.br>
+# Copyright 2023 Yth | Pont-en-Royans, France | yth@ythogtha.org
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -27,16 +30,13 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=winetricks
-VERSION=${VERSION:-20190615}
+VERSION=${VERSION:-20250102}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
 ARCH=noarch
 
-# If the variable PRINT_PACKAGE_NAME is set, then this script will report what
-# the name of the created package would be, and then exit. This information
-# could be useful to other scripts.
 if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
   echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
   exit 0

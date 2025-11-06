@@ -1,12 +1,12 @@
 PRGNAM="odamex"
-VERSION="0.9.5"
+VERSION="11.0.0"
 HOMEPAGE="https://odamex.net/"
-DOWNLOAD="https://downloads.sourceforge.net/odamex/odamex-src-0.9.5.tar.bz2 \
-          https://downloads.sourceforge.net/odamex/odamex-win32-0.9.5.zip"
-MD5SUM="2facffaf15bc2892aafd74a0630f9ee0 \
-        2e53f5a238a032439ee83504607206f7"
+DOWNLOAD="https://downloads.sourceforge.net/project/odamex/Odamex/11.0.0/odamex-src-11.0.0.tar.xz \
+          https://downloads.sourceforge.net/project/odamex/Odamex/11.0.0/odamex-win32-11.0.0.zip"
+MD5SUM="3f7fcd822995445f7286c1ca2c877778 \
+        46ada86df69cf62c36c5060f1a22c882"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
 REQUIRES="wxGTK3"
 MAINTAINER="B. Watson"
-EMAIL="yalhcru@gmail.com"
+EMAIL="urchlay@slackware.uk"

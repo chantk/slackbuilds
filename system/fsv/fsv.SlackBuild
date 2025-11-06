@@ -2,7 +2,7 @@
 
 # Slackware build script for fsv
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -79,7 +79,7 @@ sed -i \
 sed -i 's/@DATADIRNAME@/share/' po/Makefile.in.in
 ./autogen.sh
 
-CFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS -fpermissive" \
 CXXFLAGS="$SLKCFLAGS" \
 ./configure \
   --prefix=/usr \

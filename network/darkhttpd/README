@@ -11,8 +11,8 @@ Features:
 * Event loop, single-threaded -- no fork() or pthreads.
 * Generates directory listings.
 * Supports HTTP GET and HEAD requests.
-* Supports Range / partial content. (Try streaming music files or resuming
-  a download.)
+* Supports Range / partial content. (Try streaming music files or
+  resuming a download.)
 * Supports If-Modified-Since.
 * Supports Keep-Alive connections.
 * Can serve 301 redirects based on Host header.
@@ -31,3 +31,17 @@ Security:
 Limitations:
 
 * Only serves static content -- no CGI.
+
+Configuration:
+
+You need to configue the darkhttpd using the file
+
+    /etc/default/darkhttpd
+
+Them can start add rc.darkhttpd into rc.local
+
+    # Start the darkhttpd server:
+    if [ -x /etc/rc.d/rc.darkhttpd ]; then
+        /etc/rc.d/rc.darkhttpd start
+    fi
+

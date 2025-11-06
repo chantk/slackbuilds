@@ -26,10 +26,10 @@
 #
 # Modified by the SlackBuilds.org project.
 
-SRCNAM="Geography-Countries-2009041301"
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM="perl-Geography-Countries"
+SRCNAM="Geography-Countries-2009041301"
 VERSION=${VERSION:-20090413}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
@@ -81,7 +81,7 @@ cd $TMP
 tar xzvf $CWD/$SRCNAM.tar.gz
 cd $TMP/$SRCNAM
 
-chown -R root.root .
+chown -R root:root .
 find -L . \
 \( -perm 664 -o -perm 666 -o -perm 600 -o -perm 440 -o -perm 444 -o -perm 400 \) \
 -exec chmod 644 {} \;

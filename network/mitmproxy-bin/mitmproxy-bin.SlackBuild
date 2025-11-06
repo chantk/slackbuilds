@@ -2,7 +2,7 @@
 
 # Slackware build script for mitmproxy-bin
 
-# Written by B. Watson (yalhcru@gmail.com)
+# Written by B. Watson (urchlay@slackware.uk)
 
 # Licensed under the WTFPL. See http://www.wtfpl.net/txt/copying/ for details.
 
@@ -25,16 +25,24 @@
 # stuff needed to build them). Use https://docs.mitmproxy.org/stable/
 # for that.
 
+# 20230103 bkw: update for v9.0.1, fix PKGTYPE, update man page.
+
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=mitmproxy-bin
 SRCNAM=mitmproxy
-VERSION=${VERSION:-7.0.4}
+VERSION=${VERSION:-9.0.1}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
+PKGTYPE=${PKGTYPE:-tgz}
 
 # Binary repack, only supports:
 ARCH=x86_64
+
+if [ ! -z "${PRINT_PACKAGE_NAME}" ]; then
+  echo "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE"
+  exit 0
+fi
 
 TMP=${TMP:-/tmp/SBo}
 PKG=$TMP/package-$PRGNAM
@@ -93,4 +101,4 @@ mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
 
 cd $PKG
-/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.$PKGTYPE

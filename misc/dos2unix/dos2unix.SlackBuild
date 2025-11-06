@@ -1,5 +1,11 @@
 #!/bin/bash
+
 # Slackware build script for dos2unix
+
+# Copyright 2023-2025 K. Eugene Carlson, Tsukuba, Japan
+
+# Copyright 2022 Brandon Pribula, BC Canada
+
 # copyright 2017-2020 Donald Cooley, South Haven, IN, USA
 
 # Ryan P.C. McQuen | Everett, WA
@@ -27,7 +33,7 @@
 cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=dos2unix
-VERSION=${VERSION:-7.4.1}
+VERSION=${VERSION:-7.5.3}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
@@ -69,39 +75,33 @@ find -L . \
 
 if [ "$ARCH" = "i586" ]; then
   SLKCFLAGS="-O2 -march=i586 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "i686" ]; then
   SLKCFLAGS="-O2 -march=i686 -mtune=i686"
-  LIBDIRSUFFIX=""
 elif [ "$ARCH" = "x86_64" ]; then
   SLKCFLAGS="-O2 -fPIC"
-  LIBDIRSUFFIX="64"
 else
   SLKCFLAGS="-O2"
-  LIBDIRSUFFIX=""
 fi
 
 RPM_OPT_FLAGS="$SLKCFLAGS" \
-  make
+make
 make check
-make \
-  prefix=$PKG/usr \
-  docdir=$PKG/usr/doc/$PRGNAM-$VERSION \
-  mandir=$PKG/usr/man \
-  install
+make strip
+make install \
+  prefix=/usr \
+  docdir=/usr/doc/$PRGNAM-$VERSION \
+  mandir=/usr/man \
+  DESTDIR=$PKG
 
 # Put _all_ man pages under usr/man
 mv $PKG/usr/share/man/* $PKG/usr/man
 rmdir $PKG/usr/share/man
 
-find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
-  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
-
 find $PKG/usr/man -type f -exec gzip -9 {} \;
 for i in $( find $PKG/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
 
-cp -a *.txt $PKG/usr/doc/$PRGNAM-$VERSION
 cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+rm $PKG/usr/doc/$PRGNAM-$VERSION/INSTALL.txt
 
 mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
